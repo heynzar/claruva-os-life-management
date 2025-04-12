@@ -62,6 +62,26 @@ export const useTaskStore = create<TaskStore>()(
             if (!task.completedDates) {
               task.completedDates = [];
             }
+
+            // Set position if not provided
+            if (!task.position) {
+              // Find the highest position for tasks on this day
+              const tasksForDay = state.tasks.filter(
+                (t) =>
+                  t.dueDate === task.dueDate ||
+                  (t.repeatedDays.length > 0 &&
+                    task.dueDate &&
+                    t.repeatedDays.includes(
+                      format(new Date(task.dueDate), "EEEE")
+                    ))
+              );
+              const maxPosition = tasksForDay.reduce(
+                (max, t) => Math.max(max, t.position || 0),
+                0
+              );
+              task.position = maxPosition + 1;
+            }
+
             state.tasks.push(task);
           })
         ),
@@ -117,16 +137,11 @@ export const useTaskStore = create<TaskStore>()(
       reorderTasks: (day, orderedIds) =>
         set(
           produce((state: TaskStore) => {
-            const dayTasks = state.tasks.filter(
-              (t) =>
-                t.dueDate === day ||
-                t.repeatedDays.includes(format(new Date(day), "EEEE"))
-            );
-
+            // Update positions for all tasks in the ordered list
             orderedIds.forEach((id, index) => {
-              const task = dayTasks.find((t) => t.id === id);
-              if (task) {
-                task.position = index + 1;
+              const taskIndex = state.tasks.findIndex((t) => t.id === id);
+              if (taskIndex !== -1) {
+                state.tasks[taskIndex].position = index + 1;
               }
             });
           })
@@ -140,7 +155,7 @@ export const useTaskStore = create<TaskStore>()(
           .tasks.filter(
             (t) => t.dueDate === date || t.repeatedDays.includes(dayOfWeek)
           )
-          .sort((a, b) => a.position - b.position);
+          .sort((a, b) => (a.position || 999) - (b.position || 999));
       },
 
       // Check if a task is completed on a specific date
