@@ -28,6 +28,8 @@ import { format, parseISO } from "date-fns";
 import { Calendar as CalendarIcon, Repeat, Trash2 } from "lucide-react";
 import type { Task } from "@/stores/useTaskStore";
 import { useTaskStore } from "@/stores/useTaskStore";
+import DeleteConfirmationDialog from "./delete-confirmation-dialog";
+import RepeatPopover from "./repeat-popover";
 
 // Days of the week for repeat options
 const DAYS_OF_WEEK = [
@@ -73,6 +75,7 @@ export default function TaskDialog({
   const [newRepeatedDays, setNewRepeatedDays] =
     useState<string[]>(repeatedDays);
   const [repeatOpen, setRepeatOpen] = useState(false);
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
 
   const { deleteTask, goals } = useTaskStore();
 
@@ -87,8 +90,20 @@ export default function TaskDialog({
     setOpen(false);
   };
 
-  const handleDelete = () => {
+  const handleDeleteClick = () => {
+    // If it's a repetitive task, show confirmation dialog
+    if (repeatedDays.length > 0) {
+      setShowDeleteConfirmation(true);
+    } else {
+      // Otherwise delete immediately
+      deleteTask(id);
+      setOpen(false);
+    }
+  };
+
+  const handleConfirmDelete = () => {
     deleteTask(id);
+    setShowDeleteConfirmation(false);
     setOpen(false);
   };
 
@@ -113,134 +128,117 @@ export default function TaskDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>
-        <button
-          className={cn(
-            "cursor-pointer text-start px-1 py-3 w-full h-full flex justify-between items-center",
-            isCompleted && "line-through text-muted-foreground"
-          )}
-        >
-          <span>{name}</span>
-          {repeatedDays.length > 0 && (
-            <Repeat className="size-4 mr-2 text-muted-foreground/50" />
-          )}
-        </button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px] p-2">
-        <DialogTitle className="sr-only">Edit Task - {name}</DialogTitle>
+    <>
+      <Dialog open={open} onOpenChange={handleOpenChange}>
+        <DialogTrigger asChild>
+          <button
+            className={cn(
+              "cursor-pointer text-start px-1 py-3 w-full h-full flex justify-between items-center",
+              isCompleted && "line-through text-muted-foreground"
+            )}
+          >
+            <span>{name}</span>
+            {repeatedDays.length > 0 && (
+              <Repeat className="size-4 mr-2 text-muted-foreground/50" />
+            )}
+          </button>
+        </DialogTrigger>
+        <DialogContent className="sm:max-w-[500px] p-2">
+          <DialogTitle className="sr-only">Edit Task - {name}</DialogTitle>
 
-        <div className="space-y-2">
-          {/* Task Name Input */}
-          <Input
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-            placeholder="Task name"
-            className="h-12 !text-lg"
-          />
+          <div className="space-y-2">
+            {/* Task Name Input */}
+            <Input
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              placeholder="Task name"
+              className="h-12 !text-lg"
+            />
 
-          {/* Description Input */}
-          <Textarea
-            value={newDescription}
-            onChange={(e) => setNewDescription(e.target.value)}
-            placeholder="Description"
-            className="min-h-[80px] resize-none"
-          />
+            {/* Description Input */}
+            <Textarea
+              value={newDescription}
+              onChange={(e) => setNewDescription(e.target.value)}
+              placeholder="Description"
+              className="min-h-[80px] resize-none"
+            />
 
-          {/* Goal Select */}
-          <Select value={newGoalId} onValueChange={setNewGoalId}>
-            <SelectTrigger className="w-full text-base">
-              <SelectValue placeholder="Select a Goal" />
-            </SelectTrigger>
-            <SelectContent>
-              {goals.map((goal) => (
-                <SelectItem key={goal.id} value={goal.id}>
-                  {goal.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            {/* Goal Select */}
+            <Select value={newGoalId} onValueChange={setNewGoalId}>
+              <SelectTrigger className="w-full text-base">
+                <SelectValue placeholder="Select a Goal" />
+              </SelectTrigger>
+              <SelectContent>
+                {goals.map((goal) => (
+                  <SelectItem key={goal.id} value={goal.id}>
+                    {goal.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-          {/* Date and Repeat Controls */}
-          <div className="grid grid-cols-2 gap-2">
-            {/* Date Picker */}
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" className="h-10 justify-start">
-                  <CalendarIcon className="h-4 w-4 mr-2 opacity-70" />
-                  {newDueDate ? format(newDueDate, "MMM d, yyyy") : "Date"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
-                <Calendar
-                  mode="single"
-                  selected={newDueDate}
-                  onSelect={setNewDueDate}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
+            {/* Date and Repeat Controls */}
+            <div className="grid grid-cols-2 gap-2">
+              {/* Date Picker */}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="h-10 justify-start">
+                    <CalendarIcon className="h-4 w-4 mr-2 opacity-70" />
+                    {newDueDate ? format(newDueDate, "MMM d, yyyy") : "Date"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={newDueDate}
+                    onSelect={setNewDueDate}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
 
-            {/* Repeat Options */}
-            <Popover open={repeatOpen} onOpenChange={setRepeatOpen}>
-              <PopoverTrigger asChild>
-                <Button variant="outline" className="h-10 justify-baseline">
-                  <Repeat className="h-4 w-4 mr-2 opacity-70" />
-                  <span>Repeat</span>
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-56 p-2">
-                <div className="space-y-1">
-                  {DAYS_OF_WEEK.map((day) => (
-                    <div key={day} className="flex items-center">
-                      <Button
-                        type="button"
-                        variant={
-                          newRepeatedDays.includes(day) ? "default" : "outline"
-                        }
-                        onClick={() => toggleDay(day)}
-                        className={cn(
-                          "w-full justify-start",
-                          newRepeatedDays.includes(day)
-                            ? "bg-blue-600 hover:bg-blue-700 text-white"
-                            : ""
-                        )}
-                        size="sm"
-                      >
-                        {day}
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              </PopoverContent>
-            </Popover>
-          </div>
+              {/* Repeat Options - Using the new component */}
+              <RepeatPopover
+                repeatedDays={newRepeatedDays}
+                onRepeatedDaysChange={setNewRepeatedDays}
+              />
+            </div>
 
-          {/* Action Buttons */}
-          <div className="flex justify-between border-t border-muted pt-2 mt-4">
-            <Button
-              variant="outline"
-              onClick={handleDelete}
-              className="text-destructive hover:bg-destructive/10 hover:text-destructive hover:border-destructive"
-            >
-              <Trash2 className="h-4 w-4 mr-2" />
-              Delete Task
-            </Button>
-
-            <div className="space-x-2">
-              <Button variant="outline" onClick={() => setOpen(false)}>
-                Cancel
-              </Button>
+            {/* Action Buttons */}
+            <div className="flex justify-between border-t border-muted pt-2 mt-4">
               <Button
-                onClick={handleSave}
-                className="bg-blue-600 hover:bg-blue-700 text-white"
+                variant="outline"
+                onClick={handleDeleteClick}
+                className="text-destructive hover:bg-destructive/10 hover:text-destructive hover:border-destructive"
               >
-                Save
+                <Trash2 className="h-4 w-4" />
+                Delete Task
               </Button>
+
+              <div className="space-x-2">
+                <Button variant="outline" onClick={() => setOpen(false)}>
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleSave}
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  Save
+                </Button>
+              </div>
             </div>
           </div>
-        </div>
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <DeleteConfirmationDialog
+        isOpen={showDeleteConfirmation}
+        onClose={() => setShowDeleteConfirmation(false)}
+        onConfirm={handleConfirmDelete}
+        title="Delete Recurring Task"
+        description={`Are you sure you want to delete "${name}"? This will remove the task and all its tracking data across all days.`}
+      />
+    </>
   );
 }

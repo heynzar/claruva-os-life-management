@@ -4,6 +4,7 @@ import { Check } from "lucide-react";
 import TaskDialog from "./task-dialog";
 import type { Task } from "@/stores/useTaskStore";
 import { useTaskStore } from "@/stores/useTaskStore";
+import { Draggable } from "@hello-pangea/dnd";
 
 export interface TaskCardProps {
   id: string;
@@ -16,6 +17,8 @@ export interface TaskCardProps {
   repeatedDays?: string[];
   pomodoros?: number;
   position?: number;
+  index: number; // Index for drag and drop
+  isRepeating: boolean; // Whether this is a repeating task instance
 }
 
 const TaskCard = ({
@@ -29,6 +32,8 @@ const TaskCard = ({
   date, // The current date context
   pomodoros = 0,
   position,
+  index,
+  isRepeating,
 }: TaskCardProps) => {
   const { updateTask, toggleComplete, isTaskCompletedOnDate } = useTaskStore();
 
@@ -39,36 +44,58 @@ const TaskCard = ({
     updateTask(id, updates);
   };
 
+  // Create a unique draggable ID for this task instance
+  // For repeating tasks or tasks shown on a different day than their due date,
+  // we create a unique ID by combining the task ID and the date
+  const draggableId = isRepeating ? `${id}:${date}` : id;
+
   return (
-    <li className="border-b border-muted flex items-start hover:bg-muted/40 transition-colors">
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          toggleComplete(id, date);
-        }}
-        className={`size-5 cursor-pointer flex items-center justify-center aspect-square m-3 mt-4 border-2 rounded-md transition-all ${
-          isCompletedForDate
-            ? "bg-blue-600 border-blue-600 text-white"
-            : "border-muted-foreground/40 hover:border-muted-foreground"
-        }`}
-        aria-label={
-          isCompletedForDate ? "Mark as incomplete" : "Mark as complete"
-        }
-      >
-        {isCompletedForDate && <Check size={12} strokeWidth={3} />}
-      </button>
-      <TaskDialog
-        id={id}
-        name={name}
-        description={description}
-        isCompleted={isCompletedForDate}
-        goalId={goalId}
-        repeatedDays={repeatedDays}
-        dueDate={dueDate}
-        pomodoros={pomodoros}
-        onUpdate={handleTaskUpdate}
-      />
-    </li>
+    <Draggable draggableId={draggableId} index={index}>
+      {(provided, snapshot) => (
+        <li
+          ref={provided.innerRef}
+          {...provided.draggableProps}
+          {...provided.dragHandleProps}
+          id={id}
+          className={`border-b border-muted flex items-center transition-all ${
+            snapshot.isDragging
+              ? "bg-muted rotate-3 shadow-lg"
+              : "hover:bg-muted/40"
+          }`}
+          style={{
+            ...provided.draggableProps.style,
+          }}
+        >
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleComplete(id, date);
+            }}
+            className={`size-5 cursor-pointer flex items-center justify-center aspect-square m-3 border-2 rounded-md transition-all ${
+              isCompletedForDate
+                ? "bg-blue-500 border-blue-500 text-white"
+                : "border-muted-foreground/40 hover:border-muted-foreground"
+            }`}
+            aria-label={
+              isCompletedForDate ? "Mark as incomplete" : "Mark as complete"
+            }
+          >
+            {isCompletedForDate && <Check size={12} strokeWidth={3} />}
+          </button>
+          <TaskDialog
+            id={id}
+            name={name}
+            description={description}
+            isCompleted={isCompletedForDate}
+            goalId={goalId}
+            repeatedDays={repeatedDays}
+            dueDate={dueDate}
+            pomodoros={pomodoros}
+            onUpdate={handleTaskUpdate}
+          />
+        </li>
+      )}
+    </Draggable>
   );
 };
 
