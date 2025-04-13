@@ -60,7 +60,7 @@ export default function RepeatPopover({
               {repeatedDays.map((day) => (
                 <div
                   key={day}
-                  className="w-6 h-6 bg-blue-600 rounded text-white font-medium flex items-center justify-center text-xs"
+                  className="w-6 h-6 bg-primary rounded text-white font-medium flex items-center justify-center text-xs"
                 >
                   {day[0]}
                 </div>
@@ -82,7 +82,7 @@ export default function RepeatPopover({
                 className={cn(
                   "w-full justify-start",
                   repeatedDays.includes(day)
-                    ? "bg-blue-600 hover:bg-blue-700 text-white"
+                    ? "bg-primary hover:bg-primary/80 border border-primary text-white"
                     : ""
                 )}
                 size="sm"

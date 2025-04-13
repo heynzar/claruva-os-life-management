@@ -17,6 +17,7 @@ import { useTaskStore } from "@/stores/useTaskStore";
 import { format, addDays, subDays, isToday, differenceInDays } from "date-fns";
 import { DragDropContext, type DropResult } from "@hello-pangea/dnd";
 import { v4 as uuidv4 } from "uuid";
+import HomePreferencePopover from "@/components/home-preference-popover";
 
 // Initial tasks that match the Task type from the Zustand store
 const initialTasksData = [
@@ -31,6 +32,7 @@ const initialTasksData = [
     pomodoros: 2,
     position: 1,
     completedDates: [],
+    positionsByDate: {},
   },
   {
     id: "2",
@@ -43,6 +45,7 @@ const initialTasksData = [
     pomodoros: 1,
     position: 2,
     completedDates: [],
+    positionsByDate: {},
   },
   {
     id: "3",
@@ -55,13 +58,20 @@ const initialTasksData = [
     pomodoros: 0,
     position: 1,
     completedDates: [],
+    positionsByDate: {},
   },
 ];
 
 export default function Home() {
   // Get tasks and actions from the Zustand store
-  const { tasks, addTask, getTasksForDate, updateTask, reorderTasks } =
-    useTaskStore();
+  const {
+    tasks,
+    addTask,
+    getTasksForDate,
+    updateTask,
+    reorderTasks,
+    getTaskPositionForDate,
+  } = useTaskStore();
 
   // Current date state for navigation
   const [currentDate, setCurrentDate] = useState(
@@ -75,7 +85,7 @@ export default function Home() {
   const daysFromToday = Math.abs(
     differenceInDays(new Date(), new Date(currentDate))
   );
-  const showTodayButton = !isCurrentDateToday && daysFromToday >= 2;
+  const showTodayButton = !isCurrentDateToday || daysFromToday >= 3;
 
   // Initialize the store with data if it's empty
   useEffect(() => {
@@ -129,6 +139,15 @@ export default function Home() {
     return draggableId;
   };
 
+  // Helper function to get all task IDs for a specific day
+  const getTaskIdsForDay = (date: string) => {
+    const tasksForDay = getTasksForDate(date);
+    return tasksForDay.map((task) => {
+      const isRepeating = isTaskRepeating(task, date);
+      return isRepeating ? `${task.id}:${date}` : task.id;
+    });
+  };
+
   // Handle drag end event
   const handleDragEnd = (result: DropResult) => {
     const { destination, source, draggableId } = result;
@@ -152,20 +171,14 @@ export default function Home() {
     // If moving within the same day container, just reorder
     if (sourceDate === destinationDate) {
       // Get all task IDs for this day
-      const dayTasks = getTasksForDate(sourceDate);
-
-      // Create a map of unique draggable IDs to task IDs
-      const taskIdMap = dayTasks.map((task) => {
-        const isRepeating = isTaskRepeating(task, sourceDate);
-        return isRepeating ? `${task.id}:${sourceDate}` : task.id;
-      });
+      const taskIds = getTaskIdsForDay(sourceDate);
 
       // Reorder the task IDs
-      const [removed] = taskIdMap.splice(source.index, 1);
-      taskIdMap.splice(destination.index, 0, removed);
+      const [removed] = taskIds.splice(source.index, 1);
+      taskIds.splice(destination.index, 0, removed);
 
       // Convert back to original task IDs for reordering
-      const reorderedTaskIds = taskIdMap.map(extractTaskId);
+      const reorderedTaskIds = taskIds.map(extractTaskId);
 
       // Update the task positions
       reorderTasks(sourceDate, reorderedTaskIds);
@@ -188,56 +201,43 @@ export default function Home() {
             pomodoros: task.pomodoros,
             position: 999, // Will be reordered properly
             completedDates: [],
+            positionsByDate: {},
           };
 
           // Add the new one-time task
           addTask(newTask);
 
-          // Reorder tasks in the destination container to place the new task
-          // at the correct position
-          const destinationTasks = getTasksForDate(destinationDate);
-          const destinationTaskIds = destinationTasks
-            .map((t) => {
-              const isRepeating = isTaskRepeating(t, destinationDate);
-              return isRepeating ? `${t.id}:${destinationDate}` : t.id;
-            })
-            .map(extractTaskId)
-            .filter((id) => id !== newTask.id); // Remove the new task if it's already in the list
+          // Get the current task IDs for the destination day
+          const destinationTaskIds =
+            getTaskIdsForDay(destinationDate).map(extractTaskId);
 
-          // Add the new task at the destination index
+          // Insert the new task at the destination index
           destinationTaskIds.splice(destination.index, 0, newTask.id);
+
+          // Update the positions
           reorderTasks(destinationDate, destinationTaskIds);
         } else {
-          // For non-repeating tasks, just update the due date
+          // For non-repeating tasks, update the due date
           updateTask(taskId, { dueDate: destinationDate });
 
-          // Reorder tasks in both source and destination containers
-          // Source container
-          const sourceTasks = getTasksForDate(sourceDate);
-          const sourceTaskIds = sourceTasks
-            .map((t) => {
-              const isRepeating = isTaskRepeating(t, sourceDate);
-              return isRepeating ? `${t.id}:${sourceDate}` : t.id;
-            })
+          // Remove the task from the source container's order
+          const sourceTaskIds = getTaskIdsForDay(sourceDate)
             .filter((id) => extractTaskId(id) !== taskId)
             .map(extractTaskId);
 
+          // Update the source container order
           reorderTasks(sourceDate, sourceTaskIds);
 
-          // Destination container
-          const destinationTasks = getTasksForDate(destinationDate);
-          const destinationTaskIds = destinationTasks
-            .map((t) => {
-              const isRepeating = isTaskRepeating(t, destinationDate);
-              return isRepeating ? `${t.id}:${destinationDate}` : t.id;
-            })
+          // Get the current task IDs for the destination day (excluding the task we're moving)
+          const destinationTaskIds = getTaskIdsForDay(destinationDate)
+            .filter((id) => extractTaskId(id) !== taskId) // Remove the task if it's already in the list
             .map(extractTaskId);
 
-          // Add the task ID at the destination index if it's not already there
-          if (!destinationTaskIds.includes(taskId)) {
-            destinationTaskIds.splice(destination.index, 0, taskId);
-            reorderTasks(destinationDate, destinationTaskIds);
-          }
+          // Insert the task at the destination index
+          destinationTaskIds.splice(destination.index, 0, taskId);
+
+          // Update the destination container order
+          reorderTasks(destinationDate, destinationTaskIds);
         }
       }
     }
@@ -247,22 +247,19 @@ export default function Home() {
     <DragDropContext onDragEnd={handleDragEnd}>
       <div className="w-full h-screen flex flex-col items-end">
         <header className="flex bg-muted/20 items-center justify-between w-full p-2">
-          <div className="flex items-center ml-8">
-            {/* Today button - only shown when not viewing today or when far from today */}
+          {/* <div className="flex items-center ml-8"></div> */}
+
+          <div className="flex items-center ml-auto">
             {showTodayButton && (
               <Button
-                variant="ghost"
+                variant="secondary"
                 size="sm"
                 onClick={navigateToToday}
-                className="flex items-center gap-1.5"
+                className="font-normal mr-2"
               >
-                <CalendarDays />
                 <span>Today</span>
               </Button>
             )}
-          </div>
-
-          <div className="flex items-center">
             <Button size="icon" variant="ghost" onClick={navigatePreviousWeek}>
               <span className="sr-only">Jump by Week</span>
               <ChevronsLeft />
@@ -280,13 +277,15 @@ export default function Home() {
               <ChevronsRight />
             </Button>
 
-            <Button size="icon" variant="ghost" className="ml-2">
-              <span className="sr-only">Settings</span>
-              <Settings2Icon />
-            </Button>
+            <HomePreferencePopover>
+              <Button size="icon" variant="ghost" className="ml-2">
+                <span className="sr-only">Settings</span>
+                <Settings2Icon />
+              </Button>
+            </HomePreferencePopover>
           </div>
         </header>
-        <main className="w-full h-full bg-muted/20 flex gap-1 p-1 pt-0">
+        <main className="w-full h-full bg-muted/20 grid grid-cols-5 gap-1 p-1 pt-0">
           {/* Yesterday's tasks */}
           <DayContainer
             date={yesterdayDate}
@@ -307,7 +306,7 @@ export default function Home() {
                   dueDate={task.dueDate}
                   date={yesterdayDate}
                   pomodoros={task.pomodoros}
-                  position={task.position}
+                  position={getTaskPositionForDate(task.id, yesterdayDate)}
                   index={index}
                   isRepeating={isRepeating}
                 />
@@ -335,7 +334,7 @@ export default function Home() {
                   dueDate={task.dueDate}
                   date={currentDate}
                   pomodoros={task.pomodoros}
-                  position={task.position}
+                  position={getTaskPositionForDate(task.id, currentDate)}
                   index={index}
                   isRepeating={isRepeating}
                 />
@@ -363,7 +362,7 @@ export default function Home() {
                   dueDate={task.dueDate}
                   date={tomorrowDate}
                   pomodoros={task.pomodoros}
-                  position={task.position}
+                  position={getTaskPositionForDate(task.id, tomorrowDate)}
                   index={index}
                   isRepeating={isRepeating}
                 />
@@ -372,12 +371,12 @@ export default function Home() {
           </DayContainer>
 
           {/* Week Goal */}
-          <GoalContainer title="Week Goal" subtitle="Week 23">
+          <GoalContainer title="Week 24" subtitle="Weekly Goals">
             {/* Week goal content would go here */}
           </GoalContainer>
 
           {/* Month Goal */}
-          <GoalContainer title="Month Goal" subtitle="January">
+          <GoalContainer title="January" subtitle="Monthly Goals">
             {/* Month goal content would go here */}
           </GoalContainer>
         </main>

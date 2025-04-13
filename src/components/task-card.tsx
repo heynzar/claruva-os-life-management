@@ -57,13 +57,15 @@ const TaskCard = ({
           {...provided.draggableProps}
           {...provided.dragHandleProps}
           id={id}
-          className={`border-b border-muted flex items-center transition-all ${
-            snapshot.isDragging
-              ? "bg-muted rotate-3 shadow-lg"
-              : "hover:bg-muted/40"
+          className={`border-b border-muted flex items-center transition-colors ${
+            snapshot.isDragging ? "bg-muted shadow-lg" : "hover:bg-muted/40"
           }`}
           style={{
             ...provided.draggableProps.style,
+            // Fix for animation glitch when dropping at the top
+            ...(snapshot.isDropAnimating && {
+              transitionDuration: "0.3s",
+            }),
           }}
         >
           <button
@@ -73,7 +75,7 @@ const TaskCard = ({
             }}
             className={`size-5 cursor-pointer flex items-center justify-center aspect-square m-3 border-2 rounded-md transition-all ${
               isCompletedForDate
-                ? "bg-blue-500 border-blue-500 text-white"
+                ? "bg-primary border-primary text-white"
                 : "border-muted-foreground/40 hover:border-muted-foreground"
             }`}
             aria-label={

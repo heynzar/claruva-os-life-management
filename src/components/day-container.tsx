@@ -25,7 +25,7 @@ export default function DayContainer({
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Determine the day label
-  let dayLabel = format(dateObj, "EEEE");
+  const dayLabel = format(dateObj, "EEEE");
   let spanLabel = "";
   if (isToday(dateObj)) {
     spanLabel = "Today";
@@ -45,19 +45,13 @@ export default function DayContainer({
           {format(dateObj, "MMM dd, yyyy")}
           {spanLabel && (
             <span
-              className={`text-xs ${spanLabel === "Today" && "text-blue-500"}`}
+              className={`text-xs ${spanLabel === "Today" && "text-primary"}`}
             >
               {spanLabel}
             </span>
           )}
         </p>
-        <span
-          className={`${
-            dayLabel === "Today" && "text-blue-500"
-          } text-2xl font-medium uppercase`}
-        >
-          {dayLabel}
-        </span>
+        <span className="text-2xl font-medium uppercase">{dayLabel}</span>
       </h2>
       <Droppable droppableId={droppableId}>
         {(provided, snapshot) => (
@@ -67,6 +61,9 @@ export default function DayContainer({
             className={`w-full flex flex-col h-full border-t border-muted ${
               snapshot.isDraggingOver ? "bg-muted/60" : ""
             }`}
+            style={{
+              minHeight: "100px", // Ensure there's always space to drop
+            }}
           >
             {children}
             {provided.placeholder}
