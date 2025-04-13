@@ -18,36 +18,6 @@ export default function AddTaskButton({
   const inputRef = useRef<HTMLInputElement>(null);
   const { addTask } = useTaskStore();
 
-  // Handle outside clicks to save the task
-  useEffect(() => {
-    if (!isEditing) return;
-
-    const handleClickOutside = (event: MouseEvent) => {
-      // If we have a container ref and the click is inside it, don't save yet
-      if (
-        containerRef?.current &&
-        event.target instanceof Node &&
-        containerRef.current.contains(event.target)
-      ) {
-        return;
-      }
-
-      // If input ref exists and the click is outside it, save the task
-      if (
-        inputRef.current &&
-        event.target instanceof Node &&
-        !inputRef.current.contains(event.target)
-      ) {
-        saveTask();
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [isEditing, taskName, date]);
-
   // Focus the input when editing starts
   useEffect(() => {
     if (isEditing && inputRef.current) {
@@ -63,7 +33,7 @@ export default function AddTaskButton({
         name: taskName.trim(),
         description: "",
         isCompleted: false,
-        dueDate: date,
+        dueDate: date, // Use the current container's date as the due date
         goalId: "quick-tasks", // Default goal for quick tasks
         repeatedDays: [],
         pomodoros: 0,
@@ -75,6 +45,20 @@ export default function AddTaskButton({
 
     // If taskName is empty and we're saving, exit edit mode
     if (!taskName.trim()) {
+      setIsEditing(false);
+    }
+  };
+
+  const handleBlur = () => {
+    // If there's text, save the task and stay in edit mode for quick entry
+    if (taskName.trim()) {
+      saveTask();
+      setTaskName("");
+      if (inputRef.current) {
+        inputRef.current.focus();
+      } // Clear input after saving
+    } else {
+      // If no text, exit edit mode
       setIsEditing(false);
     }
   };
@@ -106,6 +90,7 @@ export default function AddTaskButton({
           value={taskName}
           onChange={(e) => setTaskName(e.target.value)}
           onKeyDown={handleKeyDown}
+          onBlur={handleBlur}
           placeholder="Task name"
           className="bg-transparent border-none py-3 outline-none w-full text-foreground placeholder:text-muted-foreground/60 pl-1"
           autoFocus

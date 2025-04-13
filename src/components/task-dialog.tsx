@@ -90,6 +90,15 @@ export default function TaskDialog({
     setOpen(false);
   };
 
+  const handleKeyDown = (
+    e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSave();
+    }
+  };
+
   const handleDeleteClick = () => {
     // If it's a repetitive task, show confirmation dialog
     if (repeatedDays.length > 0) {
@@ -153,6 +162,7 @@ export default function TaskDialog({
               onChange={(e) => setNewName(e.target.value)}
               placeholder="Task name"
               className="h-12 !text-lg"
+              onKeyDown={handleKeyDown}
             />
 
             {/* Description Input */}
@@ -161,6 +171,13 @@ export default function TaskDialog({
               onChange={(e) => setNewDescription(e.target.value)}
               placeholder="Description"
               className="min-h-[80px] resize-none"
+              onKeyDown={(e) => {
+                // Allow line breaks with Shift+Enter
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSave();
+                }
+              }}
             />
 
             {/* Goal Select */}
@@ -219,10 +236,7 @@ export default function TaskDialog({
                 <Button variant="outline" onClick={() => setOpen(false)}>
                   Cancel
                 </Button>
-                <Button
-                  onClick={handleSave}
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
-                >
+                <Button onClick={handleSave} className="text-white">
                   Save
                 </Button>
               </div>
