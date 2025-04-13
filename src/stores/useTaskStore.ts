@@ -12,9 +12,11 @@ type Task = {
   goalId: string;
   repeatedDays: string[]; // e.g. ['Monday', 'Thursday']
   pomodoros: number;
-  position: number;
+  position: number; // Default position (used for non-repeating tasks)
   // Track completion status per day for repeating tasks
   completedDates?: string[]; // Array of dates (YYYY-MM-DD) when this task was completed
+  // Track positions per day for repeating tasks
+  positionsByDate?: Record<string, number>; // Map of date (YYYY-MM-DD) to position
 };
 
 type Goal = {
@@ -33,10 +35,16 @@ type TaskStore = {
   deleteTask: (id: string) => void;
   toggleComplete: (id: string, date: string) => void;
   reorderTasks: (day: string, orderedIds: string[]) => void;
+  setTaskPositionForDate: (
+    taskId: string,
+    date: string,
+    position: number
+  ) => void;
 
   // Selectors
   getTasksForDate: (date: string) => Task[];
   isTaskCompletedOnDate: (taskId: string, date: string) => boolean;
+  getTaskPositionForDate: (taskId: string, date: string) => number;
 };
 
 // Default goals
@@ -63,6 +71,11 @@ export const useTaskStore = create<TaskStore>()(
               task.completedDates = [];
             }
 
+            // Initialize positionsByDate if not present
+            if (!task.positionsByDate) {
+              task.positionsByDate = {};
+            }
+
             // Set position if not provided
             if (!task.position) {
               // Find the highest position for tasks on this day
@@ -80,6 +93,11 @@ export const useTaskStore = create<TaskStore>()(
                 0
               );
               task.position = maxPosition + 1;
+            }
+
+            // If it's a repeating task, set the initial position for the due date
+            if (task.repeatedDays.length > 0 && task.dueDate) {
+              task.positionsByDate[task.dueDate] = task.position;
             }
 
             state.tasks.push(task);
@@ -130,6 +148,30 @@ export const useTaskStore = create<TaskStore>()(
               // For non-repeating tasks on their due date, use the isCompleted flag
               task.isCompleted = !task.isCompleted;
             }
+            if (task.isCompleted || task.completedDates?.includes(date)) {
+              const audio = new Audio("/check.wav");
+              audio.play();
+            }
+          })
+        ),
+
+      // Set position for a task on a specific date
+      setTaskPositionForDate: (taskId, date, position) =>
+        set(
+          produce((state: TaskStore) => {
+            const task = state.tasks.find((t) => t.id === taskId);
+            if (!task) return;
+
+            // For repeating tasks, store position by date
+            if (task.repeatedDays.length > 0 || task.dueDate !== date) {
+              if (!task.positionsByDate) {
+                task.positionsByDate = {};
+              }
+              task.positionsByDate[date] = position;
+            } else {
+              // For non-repeating tasks on their due date, use the position property
+              task.position = position;
+            }
           })
         ),
 
@@ -141,21 +183,69 @@ export const useTaskStore = create<TaskStore>()(
             orderedIds.forEach((id, index) => {
               const taskIndex = state.tasks.findIndex((t) => t.id === id);
               if (taskIndex !== -1) {
-                state.tasks[taskIndex].position = index + 1;
+                const task = state.tasks[taskIndex];
+
+                // For repeating tasks, store position by date
+                if (task.repeatedDays.length > 0 || task.dueDate !== day) {
+                  if (!task.positionsByDate) {
+                    task.positionsByDate = {};
+                  }
+                  task.positionsByDate[day] = index + 1;
+                } else {
+                  // For non-repeating tasks on their due date, use the position property
+                  task.position = index + 1;
+                }
               }
             });
           })
         ),
 
+      // Get position for a task on a specific date
+      getTaskPositionForDate: (taskId, date) => {
+        const task = get().tasks.find((t) => t.id === taskId);
+        if (!task) return 999;
+
+        // For repeating tasks, get position by date
+        if (task.repeatedDays.length > 0 || task.dueDate !== date) {
+          return task.positionsByDate?.[date] || task.position || 999;
+        }
+
+        // For non-repeating tasks on their due date, use the position property
+        return task.position || 999;
+      },
+
       // 📆 Get tasks for a specific day
       getTasksForDate: (date) => {
         const dayOfWeek = format(new Date(date), "EEEE");
+        const dateObj = new Date(date);
+        const store = get();
 
-        return get()
-          .tasks.filter(
-            (t) => t.dueDate === date || t.repeatedDays.includes(dayOfWeek)
-          )
-          .sort((a, b) => (a.position || 999) - (b.position || 999));
+        return store.tasks
+          .filter((t) => {
+            // Case 1: Task is due on this exact date
+            if (t.dueDate === date) {
+              return true;
+            }
+
+            // Case 2: Task is repetitive and should appear on this day of week
+            if (t.repeatedDays.includes(dayOfWeek)) {
+              // Only show repetitive tasks on or after their due date
+              if (t.dueDate) {
+                const dueDate = new Date(t.dueDate);
+                // Compare dates - only show if the current date is on or after the due date
+                return dateObj >= dueDate;
+              }
+              return true; // If no due date is set, show on all matching days
+            }
+
+            return false;
+          })
+          .sort((a, b) => {
+            // Sort by position, using the date-specific position if available
+            const posA = store.getTaskPositionForDate(a.id, date);
+            const posB = store.getTaskPositionForDate(b.id, date);
+            return posA - posB;
+          });
       },
 
       // Check if a task is completed on a specific date
