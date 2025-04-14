@@ -10,7 +10,7 @@ import {
   Settings2Icon,
 } from "lucide-react";
 import { useState, useEffect } from "react";
-import { useTaskStore } from "@/stores/useTaskStore";
+import { type Task, useTaskStore } from "@/stores/useTaskStore";
 import { format, addDays, subDays, isToday, differenceInDays } from "date-fns";
 import { DragDropContext, type DropResult } from "@hello-pangea/dnd";
 import { v4 as uuidv4 } from "uuid";
@@ -19,14 +19,16 @@ import { Separator } from "@/components/ui/separator";
 import HomePreferencePopover from "@/components/home-preference-popover";
 
 // Initial tasks that match the Task type from the Zustand store
-const initialTasksData = [
+const initialTasksData: Task[] = [
   {
     id: "1",
     name: "Complete project proposal",
     description: "Finish the draft and send it to the team for review",
     isCompleted: false,
+    type: "daily",
     dueDate: "2025-04-10",
-    goalId: "work",
+    tags: ["Work"],
+    priority: "high",
     repeatedDays: ["Monday", "Wednesday", "Friday"],
     pomodoros: 2,
     position: 1,
@@ -38,8 +40,10 @@ const initialTasksData = [
     name: "Go for a run",
     description: "30 minutes jogging in the park",
     isCompleted: true,
+    type: "daily",
     dueDate: "2025-04-10",
-    goalId: "health",
+    tags: ["Health"],
+    priority: "medium",
     repeatedDays: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
     pomodoros: 1,
     position: 2,
@@ -51,8 +55,10 @@ const initialTasksData = [
     name: "Buy groceries",
     description: "Milk, eggs, bread, and vegetables",
     isCompleted: true,
+    type: "daily",
     dueDate: "2025-04-11",
-    goalId: "personal",
+    tags: ["Personal"],
+    priority: "low",
     repeatedDays: [],
     pomodoros: 0,
     position: 1,
@@ -186,16 +192,18 @@ export default function Golas() {
       const task = tasks.find((t) => t.id === taskId);
 
       if (task) {
-        if (task.repeatedDays.length > 0) {
+        if (task.repeatedDays?.length) {
           // For repeating tasks, create a new one-time task for the destination date
           // while keeping the original repeating task intact
-          const newTask = {
+          const newTask: Task = {
             id: uuidv4(), // Generate a new ID for the one-time task
             name: task.name,
             description: task.description,
             isCompleted: false, // Start as not completed
+            type: "daily", // Set the type to daily
             dueDate: destinationDate, // Set to the destination date
-            goalId: task.goalId,
+            tags: task.tags, // Copy tags
+            priority: task.priority, // Copy priority
             repeatedDays: [], // Not repeating
             pomodoros: task.pomodoros,
             position: 999, // Will be reordered properly

@@ -1,11 +1,9 @@
 "use client";
-import Sidebar from "@/components/sidebar/sidebar";
 import DayContainer from "@/components/day-container";
 import GoalContainer from "@/components/goal-container";
 import TaskCard from "@/components/task-card";
 import { Button } from "@/components/ui/button";
 import {
-  CalendarDays,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
@@ -13,21 +11,23 @@ import {
   Settings2Icon,
 } from "lucide-react";
 import { useState, useEffect } from "react";
-import { useTaskStore } from "@/stores/useTaskStore";
+import { useTaskStore, type Task } from "@/stores/useTaskStore";
 import { format, addDays, subDays, isToday, differenceInDays } from "date-fns";
 import { DragDropContext, type DropResult } from "@hello-pangea/dnd";
 import { v4 as uuidv4 } from "uuid";
 import HomePreferencePopover from "@/components/home-preference-popover";
 
-// Initial tasks that match the Task type from the Zustand store
-const initialTasksData = [
+// Initial tasks with proper typing
+const initialTasksData: Task[] = [
   {
     id: "1",
     name: "Complete project proposal",
     description: "Finish the draft and send it to the team for review",
     isCompleted: false,
+    type: "daily",
     dueDate: "2025-04-10",
-    goalId: "work",
+    tags: ["Work"],
+    priority: "high",
     repeatedDays: ["Monday", "Wednesday", "Friday"],
     pomodoros: 2,
     position: 1,
@@ -39,8 +39,10 @@ const initialTasksData = [
     name: "Go for a run",
     description: "30 minutes jogging in the park",
     isCompleted: true,
+    type: "daily",
     dueDate: "2025-04-10",
-    goalId: "health",
+    tags: ["Health"],
+    priority: "medium",
     repeatedDays: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
     pomodoros: 1,
     position: 2,
@@ -52,8 +54,10 @@ const initialTasksData = [
     name: "Buy groceries",
     description: "Milk, eggs, bread, and vegetables",
     isCompleted: true,
+    type: "daily",
     dueDate: "2025-04-11",
-    goalId: "personal",
+    tags: ["Personal"],
+    priority: "low",
     repeatedDays: [],
     pomodoros: 0,
     position: 1,
@@ -105,7 +109,7 @@ export default function Home() {
 
   // Navigation functions
   const navigatePreviousDay = () => {
-    setCurrentDate(format(addDays(new Date(currentDate), -1), "yyyy-MM-dd"));
+    setCurrentDate(format(subDays(new Date(currentDate), 1), "yyyy-MM-dd"));
   };
 
   const navigateNextDay = () => {
@@ -113,7 +117,7 @@ export default function Home() {
   };
 
   const navigatePreviousWeek = () => {
-    setCurrentDate(format(addDays(new Date(currentDate), -7), "yyyy-MM-dd"));
+    setCurrentDate(format(subDays(new Date(currentDate), 7), "yyyy-MM-dd"));
   };
 
   const navigateNextWeek = () => {
@@ -126,21 +130,17 @@ export default function Home() {
   };
 
   // Helper function to determine if a task is repeating or shown on a different day
-  const isTaskRepeating = (task: any, date: string) => {
-    return task.repeatedDays.length > 0 || task.dueDate !== date;
+  const isTaskRepeating = (task: Task, date: string): boolean => {
+    return Boolean(task.repeatedDays?.length) || task.dueDate !== date;
   };
 
   // Helper function to extract the original task ID from a draggable ID
-  const extractTaskId = (draggableId: string) => {
-    // If the ID contains a colon, it's a repeating task instance
-    if (draggableId.includes(":")) {
-      return draggableId.split(":")[0];
-    }
-    return draggableId;
+  const extractTaskId = (draggableId: string): string => {
+    return draggableId.includes(":") ? draggableId.split(":")[0] : draggableId;
   };
 
   // Helper function to get all task IDs for a specific day
-  const getTaskIdsForDay = (date: string) => {
+  const getTaskIdsForDay = (date: string): string[] => {
     const tasksForDay = getTasksForDate(date);
     return tasksForDay.map((task) => {
       const isRepeating = isTaskRepeating(task, date);
@@ -149,7 +149,7 @@ export default function Home() {
   };
 
   // Handle drag end event
-  const handleDragEnd = (result: DropResult) => {
+  const handleDragEnd = (result: DropResult): void => {
     const { destination, source, draggableId } = result;
 
     // If there's no destination or the item was dropped back in its original position
@@ -187,16 +187,18 @@ export default function Home() {
       const task = tasks.find((t) => t.id === taskId);
 
       if (task) {
-        if (task.repeatedDays.length > 0) {
+        if (task.repeatedDays?.length) {
           // For repeating tasks, create a new one-time task for the destination date
           // while keeping the original repeating task intact
-          const newTask = {
+          const newTask: Task = {
             id: uuidv4(), // Generate a new ID for the one-time task
             name: task.name,
             description: task.description,
             isCompleted: false, // Start as not completed
+            type: "daily", // Set the type to daily
             dueDate: destinationDate, // Set to the destination date
-            goalId: task.goalId,
+            tags: task.tags, // Copy tags
+            priority: task.priority, // Copy priority
             repeatedDays: [], // Not repeating
             pomodoros: task.pomodoros,
             position: 999, // Will be reordered properly
@@ -243,12 +245,34 @@ export default function Home() {
     }
   };
 
+  // Render the task card component with proper props
+  const renderTaskCard = (task: Task, date: string, index: number) => {
+    const isRepeating = isTaskRepeating(task, date);
+    return (
+      <TaskCard
+        key={isRepeating ? `${task.id}-${date}` : task.id}
+        id={task.id}
+        name={task.name}
+        description={task.description}
+        type={task.type}
+        tags={task.tags}
+        priority={task.priority}
+        timeFrameKey={task.timeFrameKey}
+        repeatedDays={task.repeatedDays}
+        dueDate={task.dueDate}
+        date={date}
+        pomodoros={task.pomodoros}
+        position={getTaskPositionForDate(task.id, date)}
+        index={index}
+        isRepeating={isRepeating}
+      />
+    );
+  };
+
   return (
     <DragDropContext onDragEnd={handleDragEnd}>
       <div className="w-full h-screen flex flex-col items-end">
         <header className="flex bg-muted/20 items-center justify-between w-full p-2">
-          {/* <div className="flex items-center ml-8"></div> */}
-
           <div className="flex items-center ml-auto">
             {showTodayButton && (
               <Button
@@ -292,26 +316,9 @@ export default function Home() {
             tasks={yesterdayTasks}
             droppableId={yesterdayDate}
           >
-            {yesterdayTasks.map((task, index) => {
-              const isRepeating = isTaskRepeating(task, yesterdayDate);
-              return (
-                <TaskCard
-                  key={isRepeating ? `${task.id}:${yesterdayDate}` : task.id}
-                  id={task.id}
-                  name={task.name}
-                  description={task.description}
-                  isCompleted={task.isCompleted}
-                  goalId={task.goalId}
-                  repeatedDays={task.repeatedDays}
-                  dueDate={task.dueDate}
-                  date={yesterdayDate}
-                  pomodoros={task.pomodoros}
-                  position={getTaskPositionForDate(task.id, yesterdayDate)}
-                  index={index}
-                  isRepeating={isRepeating}
-                />
-              );
-            })}
+            {yesterdayTasks.map((task, index) =>
+              renderTaskCard(task, yesterdayDate, index)
+            )}
           </DayContainer>
 
           {/* Today's tasks */}
@@ -320,26 +327,9 @@ export default function Home() {
             tasks={todayTasks}
             droppableId={currentDate}
           >
-            {todayTasks.map((task, index) => {
-              const isRepeating = isTaskRepeating(task, currentDate);
-              return (
-                <TaskCard
-                  key={isRepeating ? `${task.id}:${currentDate}` : task.id}
-                  id={task.id}
-                  name={task.name}
-                  description={task.description}
-                  isCompleted={task.isCompleted}
-                  goalId={task.goalId}
-                  repeatedDays={task.repeatedDays}
-                  dueDate={task.dueDate}
-                  date={currentDate}
-                  pomodoros={task.pomodoros}
-                  position={getTaskPositionForDate(task.id, currentDate)}
-                  index={index}
-                  isRepeating={isRepeating}
-                />
-              );
-            })}
+            {todayTasks.map((task, index) =>
+              renderTaskCard(task, currentDate, index)
+            )}
           </DayContainer>
 
           {/* Tomorrow's tasks */}
@@ -348,26 +338,9 @@ export default function Home() {
             tasks={tomorrowTasks}
             droppableId={tomorrowDate}
           >
-            {tomorrowTasks.map((task, index) => {
-              const isRepeating = isTaskRepeating(task, tomorrowDate);
-              return (
-                <TaskCard
-                  key={isRepeating ? `${task.id}:${tomorrowDate}` : task.id}
-                  id={task.id}
-                  name={task.name}
-                  description={task.description}
-                  isCompleted={task.isCompleted}
-                  goalId={task.goalId}
-                  repeatedDays={task.repeatedDays}
-                  dueDate={task.dueDate}
-                  date={tomorrowDate}
-                  pomodoros={task.pomodoros}
-                  position={getTaskPositionForDate(task.id, tomorrowDate)}
-                  index={index}
-                  isRepeating={isRepeating}
-                />
-              );
-            })}
+            {tomorrowTasks.map((task, index) =>
+              renderTaskCard(task, tomorrowDate, index)
+            )}
           </DayContainer>
 
           {/* Week Goal */}

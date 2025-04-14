@@ -6,28 +6,24 @@ import { format } from "date-fns";
 type Task = {
   id: string;
   name: string;
-  description: string;
+  description?: string;
   isCompleted: boolean;
-  dueDate: string; // format: "YYYY-MM-DD"
-  goalId: string;
-  repeatedDays: string[]; // e.g. ['Monday', 'Thursday']
-  pomodoros: number;
-  position: number; // Default position (used for non-repeating tasks)
-  // Track completion status per day for repeating tasks
-  completedDates?: string[]; // Array of dates (YYYY-MM-DD) when this task was completed
-  // Track positions per day for repeating tasks
-  positionsByDate?: Record<string, number>; // Map of date (YYYY-MM-DD) to position
-};
-
-type Goal = {
-  id: string;
-  name: string;
-  color?: string;
+  // 'daily' is a task with a dueDate
+  // others are types of goals
+  type: "daily" | "weekly" | "monthly" | "yearly" | "life";
+  dueDate?: string; // Only for 'daily' type tasks (format: YYYY-MM-DD)
+  timeFrameKey?: string; // e.g., "2025-W15" (for weekly), "2025-04" (monthly), etc.
+  repeatedDays?: string[]; // Habit days: e.g., ['Monday', 'Thursday']
+  pomodoros?: number;
+  position?: number; // For static ordering (non-repeating)
+  completedDates?: string[]; // For tracking recurring completions
+  positionsByDate?: Record<string, number>; // Kanban order per day
+  priority: "low" | "medium" | "high";
+  tags?: string[]; // E.g., ['Spiritual', 'Health', 'Work']
 };
 
 type TaskStore = {
   tasks: Task[];
-  goals: Goal[];
 
   // Actions
   addTask: (task: Task) => void;
@@ -43,24 +39,15 @@ type TaskStore = {
 
   // Selectors
   getTasksForDate: (date: string) => Task[];
+  getTasksByType: (type: Task["type"], timeFrameKey?: string) => Task[];
   isTaskCompletedOnDate: (taskId: string, date: string) => boolean;
   getTaskPositionForDate: (taskId: string, date: string) => number;
 };
-
-// Default goals
-const defaultGoals: Goal[] = [
-  { id: "work", name: "Work", color: "#4f46e5" },
-  { id: "personal", name: "Personal", color: "#10b981" },
-  { id: "health", name: "Health", color: "#ef4444" },
-  { id: "learning", name: "Learning", color: "#f59e0b" },
-  { id: "quick-tasks", name: "Quick Tasks", color: "#6b7280" },
-];
 
 export const useTaskStore = create<TaskStore>()(
   persist(
     (set, get) => ({
       tasks: [],
-      goals: defaultGoals,
 
       // ➕ Add new task
       addTask: (task) =>
@@ -78,26 +65,44 @@ export const useTaskStore = create<TaskStore>()(
 
             // Set position if not provided
             if (!task.position) {
-              // Find the highest position for tasks on this day
-              const tasksForDay = state.tasks.filter(
-                (t) =>
-                  t.dueDate === task.dueDate ||
-                  (t.repeatedDays.length > 0 &&
-                    task.dueDate &&
-                    t.repeatedDays.includes(
-                      format(new Date(task.dueDate), "EEEE")
-                    ))
-              );
-              const maxPosition = tasksForDay.reduce(
-                (max, t) => Math.max(max, t.position || 0),
-                0
-              );
-              task.position = maxPosition + 1;
+              if (task.type === "daily" && task.dueDate) {
+                // Find the highest position for tasks on this day
+                const tasksForDay = state.tasks.filter(
+                  (t) =>
+                    (t.type === "daily" && t.dueDate === task.dueDate) ||
+                    (t.type === "daily" &&
+                      t.repeatedDays?.length &&
+                      task.dueDate &&
+                      t.repeatedDays.includes(
+                        format(new Date(task.dueDate), "EEEE")
+                      ))
+                );
+                const maxPosition = tasksForDay.reduce(
+                  (max, t) => Math.max(max, t.position || 0),
+                  0
+                );
+                task.position = maxPosition + 1;
+              } else {
+                // For goal-type tasks, find max position of same type
+                const tasksOfSameType = state.tasks.filter(
+                  (t) =>
+                    t.type === task.type && t.timeFrameKey === task.timeFrameKey
+                );
+                const maxPosition = tasksOfSameType.reduce(
+                  (max, t) => Math.max(max, t.position || 0),
+                  0
+                );
+                task.position = maxPosition + 1;
+              }
             }
 
             // If it's a repeating task, set the initial position for the due date
-            if (task.repeatedDays.length > 0 && task.dueDate) {
-              task.positionsByDate[task.dueDate] = task.position;
+            if (
+              task.type === "daily" &&
+              task.repeatedDays?.length &&
+              task.dueDate
+            ) {
+              task.positionsByDate[task.dueDate] = task.position || 0;
             }
 
             state.tasks.push(task);
@@ -130,8 +135,11 @@ export const useTaskStore = create<TaskStore>()(
             const task = state.tasks.find((t) => t.id === id);
             if (!task) return;
 
-            // For repeating tasks, track completion by date
-            if (task.repeatedDays.length > 0 || task.dueDate !== date) {
+            // For repeating tasks or tasks being completed on a date other than dueDate
+            if (
+              (task.type === "daily" && task.repeatedDays?.length) ||
+              (task.type === "daily" && task.dueDate !== date)
+            ) {
               if (!task.completedDates) {
                 task.completedDates = [];
               }
@@ -145,9 +153,11 @@ export const useTaskStore = create<TaskStore>()(
                 task.completedDates.push(date);
               }
             } else {
-              // For non-repeating tasks on their due date, use the isCompleted flag
+              // For non-repeating tasks on their due date, or for goal-type tasks
               task.isCompleted = !task.isCompleted;
             }
+
+            // Play sound when task is completed
             if (task.isCompleted || task.completedDates?.includes(date)) {
               const audio = new Audio("/check.wav");
               audio.play();
@@ -162,14 +172,17 @@ export const useTaskStore = create<TaskStore>()(
             const task = state.tasks.find((t) => t.id === taskId);
             if (!task) return;
 
-            // For repeating tasks, store position by date
-            if (task.repeatedDays.length > 0 || task.dueDate !== date) {
+            // For repeating daily tasks or tasks on date other than due date
+            if (
+              (task.type === "daily" && task.repeatedDays?.length) ||
+              (task.type === "daily" && task.dueDate !== date)
+            ) {
               if (!task.positionsByDate) {
                 task.positionsByDate = {};
               }
               task.positionsByDate[date] = position;
             } else {
-              // For non-repeating tasks on their due date, use the position property
+              // For non-repeating tasks or goal-type tasks
               task.position = position;
             }
           })
@@ -185,14 +198,17 @@ export const useTaskStore = create<TaskStore>()(
               if (taskIndex !== -1) {
                 const task = state.tasks[taskIndex];
 
-                // For repeating tasks, store position by date
-                if (task.repeatedDays.length > 0 || task.dueDate !== day) {
+                // For repeating daily tasks or tasks on date other than due date
+                if (
+                  (task.type === "daily" && task.repeatedDays?.length) ||
+                  (task.type === "daily" && task.dueDate !== day)
+                ) {
                   if (!task.positionsByDate) {
                     task.positionsByDate = {};
                   }
                   task.positionsByDate[day] = index + 1;
                 } else {
-                  // For non-repeating tasks on their due date, use the position property
+                  // For non-repeating tasks or goal-type tasks
                   task.position = index + 1;
                 }
               }
@@ -205,16 +221,19 @@ export const useTaskStore = create<TaskStore>()(
         const task = get().tasks.find((t) => t.id === taskId);
         if (!task) return 999;
 
-        // For repeating tasks, get position by date
-        if (task.repeatedDays.length > 0 || task.dueDate !== date) {
+        // For repeating daily tasks or tasks on date other than due date
+        if (
+          (task.type === "daily" && task.repeatedDays?.length) ||
+          (task.type === "daily" && task.dueDate !== date)
+        ) {
           return task.positionsByDate?.[date] || task.position || 999;
         }
 
-        // For non-repeating tasks on their due date, use the position property
+        // For non-repeating tasks or goal-type tasks
         return task.position || 999;
       },
 
-      // 📆 Get tasks for a specific day
+      // 📆 Get tasks for a specific day (only daily tasks)
       getTasksForDate: (date) => {
         const dayOfWeek = format(new Date(date), "EEEE");
         const dateObj = new Date(date);
@@ -222,13 +241,16 @@ export const useTaskStore = create<TaskStore>()(
 
         return store.tasks
           .filter((t) => {
+            // Only consider daily tasks
+            if (t.type !== "daily") return false;
+
             // Case 1: Task is due on this exact date
             if (t.dueDate === date) {
               return true;
             }
 
             // Case 2: Task is repetitive and should appear on this day of week
-            if (t.repeatedDays.includes(dayOfWeek)) {
+            if (t.repeatedDays?.includes(dayOfWeek)) {
               // Only show repetitive tasks on or after their due date
               if (t.dueDate) {
                 const dueDate = new Date(t.dueDate);
@@ -248,17 +270,37 @@ export const useTaskStore = create<TaskStore>()(
           });
       },
 
+      // Get tasks by type (for goals, etc.)
+      getTasksByType: (type, timeFrameKey) => {
+        const store = get();
+
+        return store.tasks
+          .filter((t) => {
+            // Match the task type
+            if (t.type !== type) return false;
+
+            // If timeFrameKey is provided, match that too
+            if (timeFrameKey && t.timeFrameKey !== timeFrameKey) return false;
+
+            return true;
+          })
+          .sort((a, b) => (a.position || 999) - (b.position || 999));
+      },
+
       // Check if a task is completed on a specific date
       isTaskCompletedOnDate: (taskId, date) => {
         const task = get().tasks.find((t) => t.id === taskId);
         if (!task) return false;
 
-        // For repeating tasks, check the completedDates array
-        if (task.repeatedDays.length > 0 || task.dueDate !== date) {
+        // For repeating daily tasks or tasks being checked on a date other than dueDate
+        if (
+          (task.type === "daily" && task.repeatedDays?.length) ||
+          (task.type === "daily" && task.dueDate !== date)
+        ) {
           return task.completedDates?.includes(date) || false;
         }
 
-        // For non-repeating tasks on their due date, use the isCompleted flag
+        // For non-repeating tasks on their due date, or for goal-type tasks
         return task.isCompleted;
       },
     }),
@@ -268,4 +310,4 @@ export const useTaskStore = create<TaskStore>()(
   )
 );
 
-export type { Task, Goal };
+export type { Task };
