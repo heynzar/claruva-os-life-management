@@ -1,13 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
@@ -23,71 +18,128 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { cn } from "@/lib/utils";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { format, parseISO } from "date-fns";
-import { Calendar as CalendarIcon, Repeat, Trash2 } from "lucide-react";
+import {
+  Calendar as CalendarIcon,
+  Trash2,
+  Tag,
+  Flame,
+  Plus,
+  X,
+  SignalLow,
+  SignalMedium,
+  SignalHigh,
+  Flag,
+} from "lucide-react";
 import type { Task } from "@/stores/useTaskStore";
 import { useTaskStore } from "@/stores/useTaskStore";
 import DeleteConfirmationDialog from "./delete-confirmation-dialog";
 import RepeatPopover from "./repeat-popover";
-
-// Days of the week for repeat options
-const DAYS_OF_WEEK = [
-  "Monday",
-  "Tuesday",
-  "Wednesday",
-  "Thursday",
-  "Friday",
-  "Saturday",
-  "Sunday",
-];
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "./ui/separator";
 
 interface TaskDialogProps {
   id: string;
   name: string;
   description?: string;
+  type: Task["type"];
   dueDate?: string;
-  goalId?: string;
+  timeFrameKey?: string;
+  tags?: string[];
+  priority: "low" | "medium" | "high";
   isCompleted?: boolean;
   repeatedDays?: string[];
   pomodoros?: number;
   onUpdate: (updates: Partial<Task>) => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 export default function TaskDialog({
   id,
   name,
   description = "",
+  type = "daily",
   dueDate,
-  goalId,
+  timeFrameKey,
+  tags = [],
+  priority,
   isCompleted = false,
   repeatedDays = [],
   pomodoros = 0,
   onUpdate,
+  open,
+  onOpenChange,
 }: TaskDialogProps) {
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
   const [newName, setNewName] = useState(name);
   const [newDescription, setNewDescription] = useState(description);
+  const [newType, setNewType] = useState<Task["type"]>(type);
   const [newDueDate, setNewDueDate] = useState<Date | undefined>(
     dueDate ? parseISO(dueDate) : undefined
   );
-  const [newGoalId, setNewGoalId] = useState(goalId);
-  const [newRepeatedDays, setNewRepeatedDays] =
-    useState<string[]>(repeatedDays);
-  const [repeatOpen, setRepeatOpen] = useState(false);
+  const [newTimeFrameKey, setNewTimeFrameKey] = useState(timeFrameKey);
+  const [newTags, setNewTags] = useState<string[]>(tags);
+  const [newTagInput, setNewTagInput] = useState("");
+  const [newPriority, setNewPriority] = useState<"low" | "medium" | "high">(
+    priority
+  );
+  const [newRepeatedDays, setNewRepeatedDays] = useState<string[]>(
+    repeatedDays || []
+  );
+  const [newPomodoros, setNewPomodoros] = useState(pomodoros);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
 
-  const { deleteTask, goals } = useTaskStore();
+  const { deleteTask } = useTaskStore();
+
+  // Handle external control of dialog open state
+  useEffect(() => {
+    if (open !== undefined) {
+      setInternalOpen(open);
+    }
+  }, [open]);
+
+  // Controlled open state (internal or external)
+  const isOpen = open !== undefined ? open : internalOpen;
+
+  // Handle dialog open/close
+  const handleOpenChange = (newOpen: boolean) => {
+    if (onOpenChange) {
+      onOpenChange(newOpen);
+    } else {
+      setInternalOpen(newOpen);
+    }
+
+    // Reset form when dialog opens
+    if (newOpen) {
+      setNewName(name);
+      setNewDescription(description);
+      setNewType(type);
+      setNewDueDate(dueDate ? parseISO(dueDate) : undefined);
+      setNewTimeFrameKey(timeFrameKey);
+      setNewTags(tags);
+      setNewTagInput("");
+      setNewPriority(priority);
+      setNewRepeatedDays(repeatedDays || []);
+      setNewPomodoros(pomodoros);
+    }
+  };
 
   const handleSave = () => {
     onUpdate({
       name: newName,
       description: newDescription,
+      type: newType,
       dueDate: newDueDate ? format(newDueDate, "yyyy-MM-dd") : undefined,
-      goalId: newGoalId,
+      timeFrameKey: newTimeFrameKey,
+      tags: newTags,
+      priority: newPriority,
       repeatedDays: newRepeatedDays,
+      pomodoros: newPomodoros,
     });
-    setOpen(false);
+    handleOpenChange(false);
   };
 
   const handleKeyDown = (
@@ -101,100 +153,81 @@ export default function TaskDialog({
 
   const handleDeleteClick = () => {
     // If it's a repetitive task, show confirmation dialog
-    if (repeatedDays.length > 0) {
+    if (newRepeatedDays.length > 0) {
       setShowDeleteConfirmation(true);
     } else {
       // Otherwise delete immediately
       deleteTask(id);
-      setOpen(false);
+      handleOpenChange(false);
     }
   };
 
   const handleConfirmDelete = () => {
     deleteTask(id);
     setShowDeleteConfirmation(false);
-    setOpen(false);
+    handleOpenChange(false);
   };
 
-  // Reset form when dialog opens
-  const handleOpenChange = (newOpen: boolean) => {
-    if (newOpen) {
-      setNewName(name);
-      setNewDescription(description);
-      setNewDueDate(dueDate ? parseISO(dueDate) : undefined);
-      setNewGoalId(goalId);
-      setNewRepeatedDays(repeatedDays);
+  const handleAddTag = () => {
+    if (newTagInput.trim() && !newTags.includes(newTagInput.trim())) {
+      setNewTags([...newTags, newTagInput.trim()]);
+      setNewTagInput("");
     }
-    setOpen(newOpen);
   };
 
-  const toggleDay = (day: string) => {
-    if (newRepeatedDays.includes(day)) {
-      setNewRepeatedDays(newRepeatedDays.filter((d) => d !== day));
-    } else {
-      setNewRepeatedDays([...newRepeatedDays, day]);
+  const handleRemoveTag = (tagToRemove: string) => {
+    setNewTags(newTags.filter((tag) => tag !== tagToRemove));
+  };
+
+  const handleTagInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      handleAddTag();
     }
+  };
+
+  const increasePomodoroCount = () => {
+    setNewPomodoros((prev) => (prev || 0) + 1);
+  };
+
+  const decreasePomodoroCount = () => {
+    setNewPomodoros((prev) => Math.max((prev || 0) - 1, 0));
   };
 
   return (
     <>
-      <Dialog open={open} onOpenChange={handleOpenChange}>
-        <DialogTrigger asChild>
-          <button
-            className={cn(
-              "cursor-pointer text-start px-1 py-3 w-full h-full flex justify-between items-center",
-              isCompleted && "line-through text-muted-foreground"
-            )}
-          >
-            <span>{name}</span>
-            {repeatedDays.length > 0 && (
-              <Repeat className="size-4 mr-2 text-muted-foreground/50" />
-            )}
-          </button>
-        </DialogTrigger>
-        <DialogContent className="sm:max-w-[500px] p-2">
+      <Dialog open={isOpen} onOpenChange={handleOpenChange}>
+        <DialogContent className="sm:max-w-[500px] p-2 gap-2">
           <DialogTitle className="sr-only">Edit Task - {name}</DialogTitle>
 
-          <div className="space-y-2">
-            {/* Task Name Input */}
-            <Input
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-              placeholder="Task name"
-              className="h-12 !text-lg"
-              onKeyDown={handleKeyDown}
-            />
+          {/* Task Name Input */}
+          <Input
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+            placeholder="Task name"
+            className="h-12 text-lg"
+            onKeyDown={handleKeyDown}
+          />
 
-            {/* Description Input */}
-            <Textarea
-              value={newDescription}
-              onChange={(e) => setNewDescription(e.target.value)}
-              placeholder="Description"
-              className="min-h-[80px] resize-none"
-              onKeyDown={(e) => {
-                // Allow line breaks with Shift+Enter
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSave();
-                }
-              }}
-            />
+          {/* Description Input */}
+          <Textarea
+            value={newDescription || ""}
+            onChange={(e) => setNewDescription(e.target.value)}
+            placeholder="Description"
+            className="min-h-[80px] resize-none"
+            onKeyDown={(e) => {
+              // Allow line breaks with Shift+Enter
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                handleSave();
+              }
+            }}
+          />
 
-            {/* Goal Select */}
-            <Select value={newGoalId} onValueChange={setNewGoalId}>
-              <SelectTrigger className="w-full text-base">
-                <SelectValue placeholder="Select a Goal" />
-              </SelectTrigger>
-              <SelectContent>
-                {goals.map((goal) => (
-                  <SelectItem key={goal.id} value={goal.id}>
-                    {goal.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <Separator className="my-2" />
 
-            {/* Date and Repeat Controls */}
+          {/* Date and Repeat Controls - Only for daily tasks */}
+          {newType === "daily" && (
             <div className="grid grid-cols-2 gap-2">
               {/* Date Picker */}
               <Popover>
@@ -214,32 +247,144 @@ export default function TaskDialog({
                 </PopoverContent>
               </Popover>
 
-              {/* Repeat Options - Using the new component */}
+              {/* Repeat Options */}
               <RepeatPopover
                 repeatedDays={newRepeatedDays}
                 onRepeatedDaysChange={setNewRepeatedDays}
               />
             </div>
+          )}
 
-            {/* Action Buttons */}
-            <div className="flex justify-between border-t border-muted pt-2 mt-4">
+          {/* Priority Selector */}
+          <div className="flex items-center gap-1">
+            <Label className="sr-only">Priority</Label>
+            <Select
+              value={newPriority}
+              onValueChange={(value: string) =>
+                setNewPriority(value as "low" | "medium" | "high")
+              }
+            >
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Select priority" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="low">
+                  <Flag className="text-blue-400" />
+                  Low
+                </SelectItem>
+                <SelectItem value="medium">
+                  <Flag className="text-yellow-500" />
+                  Medium
+                </SelectItem>
+                <SelectItem value="high">
+                  <Flag className="text-red-500" />
+                  High
+                </SelectItem>
+              </SelectContent>
+            </Select>
+
+            {/* Tags Input */}
+
+            <Label className="sr-only">Tags</Label>
+            <div className="flex flex-wrap gap-2 mb-2">
+              {newTags.map((tag) => (
+                <Badge
+                  key={tag}
+                  variant="secondary"
+                  className="flex items-center gap-1"
+                >
+                  {tag}
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveTag(tag)}
+                    className="ml-1 rounded-full hover:bg-muted p-0.5"
+                  >
+                    <X size={12} />
+                  </button>
+                </Badge>
+              ))}
+            </div>
+            <div className="flex w-full gap-2 items-center">
+              <Input
+                value={newTagInput}
+                onChange={(e) => setNewTagInput(e.target.value)}
+                placeholder="Add tag..."
+                onKeyDown={handleTagInputKeyDown}
+                className="flex-1"
+              />
               <Button
-                variant="outline"
-                onClick={handleDeleteClick}
-                className="text-destructive hover:bg-destructive/10 hover:text-destructive hover:border-destructive"
+                type="button"
+                variant="secondary"
+                onClick={handleAddTag}
+                disabled={!newTagInput.trim()}
               >
-                <Trash2 className="h-4 w-4" />
-                Delete Task
+                <Plus size={16} />
               </Button>
+            </div>
+          </div>
 
-              <div className="space-x-2">
-                <Button variant="outline" onClick={() => setOpen(false)}>
-                  Cancel
-                </Button>
-                <Button onClick={handleSave} className="text-white">
-                  Save
-                </Button>
-              </div>
+          <Separator className="my-2" />
+
+          {/* Pomodoro Count */}
+          <div className="flex items-center gap-2">
+            <Label className="sr-only">Pomodoros</Label>
+            <div className="flex items-center space-x-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={decreasePomodoroCount}
+                disabled={!newPomodoros}
+              >
+                -
+              </Button>
+              <span className="w-14 text-center">🍅 {newPomodoros}</span>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={increasePomodoroCount}
+              >
+                +
+              </Button>
+            </div>
+
+            {/* Task Type */}
+
+            <Label className="sr-only">Task Type</Label>
+            <Select
+              value={newType}
+              onValueChange={(value) => setNewType(value as Task["type"])}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select task type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="daily">Daily Task</SelectItem>
+                <SelectItem value="weekly">Weekly Goal</SelectItem>
+                <SelectItem value="monthly">Monthly Goal</SelectItem>
+                <SelectItem value="yearly">Yearly Goal</SelectItem>
+                <SelectItem value="life">Life Goal</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex justify-between border-t border-muted pt-4 mt-2">
+            <Button
+              variant="outline"
+              onClick={handleDeleteClick}
+              className="text-destructive hover:bg-destructive/10 hover:text-destructive hover:border-destructive"
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Delete Task
+            </Button>
+
+            <div className="space-x-2">
+              <Button variant="outline" onClick={() => handleOpenChange(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleSave}>Save</Button>
             </div>
           </div>
         </DialogContent>

@@ -2,6 +2,7 @@
 import {
   Sheet,
   SheetContent,
+  SheetDescription,
   SheetHeader,
   SheetTitle,
   SheetTrigger,
@@ -19,9 +20,13 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import TaskDialog from "../task-dialog/add-task-dialog";
+import { Task, useTaskStore } from "@/stores/useTaskStore";
+import { useState } from "react";
 
 const Sidebar = () => {
   const pathname = usePathname();
+  const { updateTask } = useTaskStore();
 
   const navigationItems = [
     { href: "/", label: "Home", icon: Home },
@@ -30,6 +35,15 @@ const Sidebar = () => {
     { href: "/pomodoros", label: "Pomodoros", icon: Timer },
     { href: "/journey", label: "Journey", icon: Map },
   ];
+
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const handleOpenDialog = () => {
+    setIsDialogOpen(true);
+  };
+
+  const handleTaskUpdate = (updates: Partial<Task>) => {
+    updateTask(id, updates);
+  };
   return (
     <Sheet>
       <SheetTrigger asChild>
@@ -46,6 +60,7 @@ const Sidebar = () => {
           <SheetTitle>
             <ProfileActions />
           </SheetTitle>
+          <SheetDescription className="sr-only">Sidebar</SheetDescription>
         </SheetHeader>
 
         <nav className="px-2 border-b pb-6">
@@ -75,7 +90,28 @@ const Sidebar = () => {
         </nav>
 
         <div className="px-4">
-          <Button variant="outline" size="sm" className="w-full font-normal">
+          <TaskDialog
+            dialog_type="add"
+            id={"1"}
+            name={""}
+            description={""}
+            type={"daily"}
+            tags={[]}
+            priority={"low"}
+            timeFrameKey={""}
+            repeatedDays={[]}
+            dueDate={""}
+            pomodoros={0}
+            onUpdate={handleTaskUpdate}
+            open={isDialogOpen}
+            onOpenChange={setIsDialogOpen}
+          />
+          <Button
+            onClick={handleOpenDialog}
+            variant="outline"
+            size="sm"
+            className="w-full font-normal"
+          >
             <Plus />
             Add Task
           </Button>

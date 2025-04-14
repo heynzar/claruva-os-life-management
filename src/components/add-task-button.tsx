@@ -7,11 +7,13 @@ import { v4 as uuidv4 } from "uuid";
 interface AddTaskButtonProps {
   date: string; // The date for this container (YYYY-MM-DD)
   containerRef?: React.RefObject<HTMLElement | null>; // Reference to the container for detecting outside clicks
+  timeFrameKey?: string; // Optional timeframe key for categorizing tasks
 }
 
 export default function AddTaskButton({
   date,
   containerRef,
+  timeFrameKey,
 }: AddTaskButtonProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [taskName, setTaskName] = useState("");
@@ -32,9 +34,12 @@ export default function AddTaskButton({
         id: uuidv4(),
         name: taskName.trim(),
         description: "",
+        type: "daily", // Set default type to daily
         isCompleted: false,
         dueDate: date, // Use the current container's date as the due date
-        goalId: "quick-tasks", // Default goal for quick tasks
+        timeFrameKey, // Use the provided timeframe key
+        tags: [], // Add any tags the user entered
+        priority: "low", // Add priority if set
         repeatedDays: [],
         pomodoros: 0,
         position: 999, // High position to place at the end
@@ -92,7 +97,7 @@ export default function AddTaskButton({
           onKeyDown={handleKeyDown}
           onBlur={handleBlur}
           placeholder="Task name"
-          className="bg-transparent border-none py-3 outline-none w-full text-foreground placeholder:text-muted-foreground/60 pl-1"
+          className="bg-transparent border-none p-3 pl-1 outline-none w-full text-foreground placeholder:text-muted-foreground/60"
           autoFocus
         />
       </div>
