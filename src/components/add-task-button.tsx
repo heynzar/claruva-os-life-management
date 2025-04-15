@@ -1,19 +1,22 @@
 "use client";
 
+import type React from "react";
 import { useState, useRef, useEffect } from "react";
-import { useTaskStore } from "@/stores/useTaskStore";
+import { type Task, useTaskStore } from "@/stores/useTaskStore";
 import { v4 as uuidv4 } from "uuid";
 
 interface AddTaskButtonProps {
-  date: string; // The date for this container (YYYY-MM-DD)
+  type?: Task["type"];
+  date?: string; // The date for daily tasks (YYYY-MM-DD)
+  defaultTimeFrameKey?: string; // For goals
   containerRef?: React.RefObject<HTMLElement | null>; // Reference to the container for detecting outside clicks
-  timeFrameKey?: string; // Optional timeframe key for categorizing tasks
 }
 
 export default function AddTaskButton({
+  type = "daily",
   date,
+  defaultTimeFrameKey,
   containerRef,
-  timeFrameKey,
 }: AddTaskButtonProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [taskName, setTaskName] = useState("");
@@ -30,21 +33,33 @@ export default function AddTaskButton({
   const saveTask = () => {
     if (taskName.trim()) {
       // Create a new task with default values
-      addTask({
+      const newTask: Task = {
         id: uuidv4(),
         name: taskName.trim(),
         description: "",
-        type: "daily", // Set default type to daily
+        type, // Use the provided type
         isCompleted: false,
-        dueDate: date, // Use the current container's date as the due date
-        timeFrameKey, // Use the provided timeframe key
-        tags: [], // Add any tags the user entered
-        priority: "low", // Add priority if set
-        repeatedDays: [],
+        priority: "low",
         pomodoros: 0,
         position: 999, // High position to place at the end
-        completedDates: [],
-      });
+        tags: [],
+      };
+
+      // Add type-specific properties
+      if (type === "daily" && date) {
+        newTask.dueDate = date;
+      } else if (type !== "daily" && defaultTimeFrameKey) {
+        newTask.timeFrameKey = defaultTimeFrameKey;
+      }
+
+      // Add empty arrays for task-specific properties
+      if (type === "daily") {
+        newTask.repeatedDays = [];
+        newTask.completedDates = [];
+        newTask.positionsByDate = {};
+      }
+
+      addTask(newTask);
       setTaskName("");
     }
 
@@ -85,6 +100,11 @@ export default function AddTaskButton({
     }
   };
 
+  const getPlaceholderText = () => {
+    if (type === "daily") return "Add Task";
+    return `Add ${type.charAt(0).toUpperCase() + type.slice(1)} Goal`;
+  };
+
   if (isEditing) {
     return (
       <div className="items-center flex hover:bg-muted/50 w-full">
@@ -96,7 +116,7 @@ export default function AddTaskButton({
           onChange={(e) => setTaskName(e.target.value)}
           onKeyDown={handleKeyDown}
           onBlur={handleBlur}
-          placeholder="Task name"
+          placeholder={type === "daily" ? "Task name" : "Goal name"}
           className="bg-transparent border-none p-3 pl-1 outline-none w-full text-foreground placeholder:text-muted-foreground/60"
           autoFocus
         />
@@ -105,12 +125,16 @@ export default function AddTaskButton({
   }
 
   return (
-    <div
-      className="items-center flex hover:bg-muted/50 cursor-pointer w-full"
-      onClick={() => setIsEditing(true)}
-    >
-      <span className="size-5 aspect-square border-2 m-3 cursor-pointer border-muted-foreground/20 rounded-md" />
-      <span className="text-muted-foreground/60 pl-1 py-3">Add task</span>
-    </div>
+    <>
+      <div
+        className="items-center flex hover:bg-muted/50 cursor-pointer w-full"
+        onClick={() => setIsEditing(true)}
+      >
+        <span className="size-5 aspect-square border-2 m-3 cursor-pointer border-muted-foreground/20 rounded-md" />
+        <span className="text-muted-foreground/60 pl-1 py-3">
+          {getPlaceholderText()}
+        </span>
+      </div>
+    </>
   );
 }

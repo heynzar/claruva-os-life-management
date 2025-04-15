@@ -19,13 +19,11 @@ interface TaskContextMenuProps {
   description?: string;
   type: Task["type"];
   dueDate?: string;
-  date: string;
   tags?: string[];
   repeatedDays?: string[];
   pomodoros?: number;
-  priority?: "low" | "medium" | "high";
+  priority: "low" | "medium" | "high";
   timeFrameKey?: string;
-  isRepeating: boolean;
   children: React.ReactNode;
   onEditClick: () => void;
 }
@@ -36,13 +34,11 @@ export default function TaskContextMenu({
   description = "",
   type,
   dueDate,
-  date,
   tags = [],
   repeatedDays = [],
   pomodoros = 0,
   priority,
   timeFrameKey,
-  isRepeating,
   children,
   onEditClick,
 }: TaskContextMenuProps) {
@@ -63,7 +59,7 @@ export default function TaskContextMenu({
       position: 0, // Will be calculated in addTask
       completedDates: [],
       positionsByDate: {},
-      priority: "low",
+      priority,
       tags,
     };
     addTask(newTask);
@@ -136,9 +132,9 @@ export default function TaskContextMenu({
           <ContextMenuSeparator />
           <ContextMenuItem
             onClick={handleDeleteClick}
-            className="text-red-500 focus:text-red-500 cursor-pointer"
+            className="text-destructive focus:text-destructive cursor-pointer"
           >
-            <Trash2 className="mr-2 h-4 w-4" />
+            <Trash2 className="mr-2 text-destructive h-4 w-4" />
             Delete Task
           </ContextMenuItem>
         </ContextMenuContent>

@@ -1,12 +1,12 @@
 "use client";
 
 import { Check, RotateCcw } from "lucide-react";
-import TaskDialog from "./task-dialog";
+import TaskDialog from "@/components/task-dialog/task-dialog";
 import type { Task } from "@/stores/useTaskStore";
 import { useTaskStore } from "@/stores/useTaskStore";
 import { Draggable } from "@hello-pangea/dnd";
 import { useState } from "react";
-import TaskContextMenu from "@/components/task-context-menu";
+import TaskContextMenu from "./task-context-menu";
 
 export interface TaskCardProps {
   id: string;
@@ -49,10 +49,6 @@ const TaskCard = ({
   // Check if this task is completed for the current date
   const isCompletedForDate = isTaskCompletedOnDate(id, date);
 
-  const handleTaskUpdate = (updates: Partial<Task>) => {
-    updateTask(id, updates);
-  };
-
   // Create a unique draggable ID for this task instance
   // For repeating tasks or tasks shown on a different day than their due date,
   // we create a unique ID by combining the task ID and the date
@@ -66,14 +62,30 @@ const TaskCard = ({
   const getPriorityColor = () => {
     switch (priority) {
       case "high":
-        return "border-l-4 border-l-red-500";
+        return "bg-red-500";
       case "medium":
-        return "border-l-4 border-l-yellow-500";
+        return "bg-yellow-500";
       case "low":
-        return "border-l-4 border-l-blue-400";
+        return "bg-primary";
       default:
         return "";
     }
+  };
+
+  // Create a task object to pass to the TaskDialog
+  const task: Task = {
+    id,
+    name,
+    description,
+    type,
+    isCompleted,
+    tags,
+    priority,
+    timeFrameKey,
+    repeatedDays,
+    dueDate,
+    pomodoros,
+    position,
   };
 
   return (
@@ -86,13 +98,11 @@ const TaskCard = ({
             description={description}
             type={type}
             dueDate={dueDate}
-            date={date}
             tags={tags}
             priority={priority}
             timeFrameKey={timeFrameKey}
             repeatedDays={repeatedDays}
             pomodoros={pomodoros}
-            isRepeating={isRepeating}
             onEditClick={handleOpenDialog}
           >
             <li
@@ -102,7 +112,7 @@ const TaskCard = ({
               id={id}
               className={`border-b cursor-grab border-muted flex items-center transition-colors ${
                 snapshot.isDragging ? "bg-muted shadow-lg" : "hover:bg-muted/40"
-              } ${getPriorityColor()}`}
+              } `}
               style={{
                 ...provided.draggableProps.style,
                 // Fix for animation glitch when dropping at the top
@@ -118,7 +128,7 @@ const TaskCard = ({
                 }}
                 className={`size-5 cursor-pointer flex items-center justify-center aspect-square m-3 border-2 rounded-md transition-all ${
                   isCompletedForDate
-                    ? "bg-primary border-primary text-white"
+                    ? getPriorityColor()
                     : "border-muted-foreground/40 hover:border-muted-foreground"
                 }`}
                 aria-label={
@@ -148,18 +158,8 @@ const TaskCard = ({
         )}
       </Draggable>
       <TaskDialog
-        id={id}
-        name={name}
-        description={description}
-        type={type}
-        isCompleted={isCompletedForDate}
-        tags={tags}
-        priority={priority}
-        timeFrameKey={timeFrameKey}
-        repeatedDays={repeatedDays}
-        dueDate={dueDate}
-        pomodoros={pomodoros}
-        onUpdate={handleTaskUpdate}
+        dialog_type="edit"
+        task={task}
         open={isDialogOpen}
         onOpenChange={setIsDialogOpen}
       />
