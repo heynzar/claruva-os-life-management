@@ -1,4 +1,6 @@
-import { Dispatch, SetStateAction } from "react";
+"use client";
+
+import type { Dispatch, SetStateAction } from "react";
 import {
   Select,
   SelectTrigger,
@@ -6,7 +8,7 @@ import {
   SelectItem,
   SelectContent,
 } from "@/components/ui/select";
-import { Task } from "@/stores/useTaskStore";
+import type { Task } from "@/stores/useTaskStore";
 import { CircleCheckBig, Target } from "lucide-react";
 
 interface TypeSelectProps {
@@ -23,31 +25,64 @@ const TypeSelect = ({
   return (
     <Select
       value={newType}
-      onValueChange={(value) => setNewType(value as Task["type"])}
+      onValueChange={(value) => {
+        const taskType = value as Task["type"];
+        setNewType(taskType);
+
+        // Reset timeFrameKey when changing type
+        if (taskType === "life") {
+          setTimeFrameKey("life");
+        } else if (taskType !== "daily") {
+          // For other goal types, initialize with current date-based timeFrameKey
+          const now = new Date();
+          if (taskType === "yearly") {
+            setTimeFrameKey(now.getFullYear().toString());
+          } else if (taskType === "monthly") {
+            const month = (now.getMonth() + 1).toString().padStart(2, "0");
+            setTimeFrameKey(`${now.getFullYear()}-${month}`);
+          } else if (taskType === "weekly") {
+            // This is a simplified approach - a proper implementation would calculate the ISO week
+            const week = Math.ceil(now.getDate() / 7)
+              .toString()
+              .padStart(2, "0");
+            setTimeFrameKey(`${now.getFullYear()}-W${week}`);
+          }
+        }
+      }}
     >
       <SelectTrigger>
         <SelectValue placeholder="Select task type" />
       </SelectTrigger>
       <SelectContent>
         <SelectItem value="daily">
-          <CircleCheckBig className="" />
-          Daily Task
+          <div className="flex items-center gap-2">
+            <CircleCheckBig className="h-4 w-4" />
+            <span>Daily Task</span>
+          </div>
         </SelectItem>
         <SelectItem value="weekly">
-          <Target className="" />
-          Weekly Goal
+          <div className="flex items-center gap-2">
+            <Target className="h-4 w-4" />
+            <span>Weekly Goal</span>
+          </div>
         </SelectItem>
         <SelectItem value="monthly">
-          <Target className="" />
-          Monthly Goal
+          <div className="flex items-center gap-2">
+            <Target className="h-4 w-4" />
+            <span>Monthly Goal</span>
+          </div>
         </SelectItem>
         <SelectItem value="yearly">
-          <Target className="" />
-          Yearly Goal
+          <div className="flex items-center gap-2">
+            <Target className="h-4 w-4" />
+            <span>Yearly Goal</span>
+          </div>
         </SelectItem>
-        <SelectItem value="life" onClick={() => setTimeFrameKey("life")}>
-          <Target className="" />
-          Life Goal
+        <SelectItem value="life">
+          <div className="flex items-center gap-2">
+            <Target className="h-4 w-4" />
+            <span>Life Goal</span>
+          </div>
         </SelectItem>
       </SelectContent>
     </Select>

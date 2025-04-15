@@ -1,8 +1,12 @@
 "use client";
 import { CalendarIcon, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
-import { Calendar } from "../ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import {
   format,
   getWeek,
@@ -16,7 +20,7 @@ import {
   addDays,
 } from "date-fns";
 
-import { Dispatch, SetStateAction, useState } from "react";
+import { type Dispatch, type SetStateAction, useState } from "react";
 
 interface DateSelectProps {
   type: "daily" | "weekly" | "monthly" | "yearly" | "life";
@@ -56,8 +60,8 @@ const DateSelect = ({
       switch (type) {
         case "weekly": {
           const parts = timeFrameKey.split("-W");
-          const year = parseInt(parts[0]);
-          const week = parseInt(parts[1]);
+          const year = Number.parseInt(parts[0]);
+          const week = Number.parseInt(parts[1]);
           // Create date for first day of the year, then add weeks
           const firstDayOfYear = new Date(year, 0, 1);
           const daysToAdd = (week - 1) * 7;
@@ -67,10 +71,10 @@ const DateSelect = ({
         }
         case "monthly": {
           const [year, month] = timeFrameKey.split("-");
-          return new Date(parseInt(year), parseInt(month) - 1, 1);
+          return new Date(Number.parseInt(year), Number.parseInt(month) - 1, 1);
         }
         case "yearly":
-          return new Date(parseInt(timeFrameKey), 0, 1);
+          return new Date(Number.parseInt(timeFrameKey), 0, 1);
         default:
           return new Date();
       }
@@ -99,7 +103,7 @@ const DateSelect = ({
       case "monthly": {
         const [year, month] = timeFrameKey.split("-");
         return format(
-          new Date(parseInt(year), parseInt(month) - 1, 1),
+          new Date(Number.parseInt(year), Number.parseInt(month) - 1, 1),
           "MMM yyyy"
         );
       }
@@ -111,12 +115,6 @@ const DateSelect = ({
         return "Select date";
     }
   };
-
-  //life
-  //2025
-  //2025-02
-  //2025-w14
-  //
 
   // Convert selected date to timeFrameKey format
   const dateToTimeFrameKey = (date: Date) => {
@@ -144,7 +142,8 @@ const DateSelect = ({
 
     if (type === "daily") {
       setNewDueDate?.(date);
-      setTimeFrameKey?.(format(date, "DD-MM-YYY"));
+      // Fix: Use correct date format (yyyy-MM-dd)
+      setTimeFrameKey?.(format(date, "yyyy-MM-dd"));
     } else if (setTimeFrameKey) {
       setTimeFrameKey(dateToTimeFrameKey(date));
     }
@@ -230,12 +229,14 @@ const DateSelect = ({
             const weekDays = getWeekDates(weekStart);
 
             return (
-              <div className="flex w-full items-center gap-2">
+              <div
+                key={weekInfo.timeFrameKey}
+                className="flex w-full items-center gap-2"
+              >
                 <span className="text-xs font-medium">
                   W{weekInfo.weekNumber}
                 </span>
                 <div
-                  key={weekInfo.timeFrameKey}
                   className={`
                   grid grid-cols-7 w-full items-center gap-1 rounded-md p-1 cursor-pointer text-center 
                   ${
@@ -271,7 +272,7 @@ const DateSelect = ({
       if (timeFrameKey && timeFrameKey.includes("-")) {
         try {
           const [year] = timeFrameKey.split("-");
-          const parsedYear = parseInt(year);
+          const parsedYear = Number.parseInt(year);
           return !isNaN(parsedYear) ? parsedYear : new Date().getFullYear();
         } catch (e) {
           return new Date().getFullYear();
@@ -301,7 +302,8 @@ const DateSelect = ({
       try {
         const [year, month] = timeFrameKey.split("-");
         return (
-          parseInt(year) === viewYear && parseInt(month) === monthIndex + 1
+          Number.parseInt(year) === viewYear &&
+          Number.parseInt(month) === monthIndex + 1
         );
       } catch (e) {
         return false;
@@ -341,7 +343,7 @@ const DateSelect = ({
     const [baseYear, setBaseYear] = useState<number>(() => {
       // Try to parse the year from timeFrameKey or use current year
       if (timeFrameKey && /^\d{4}$/.test(timeFrameKey)) {
-        const year = parseInt(timeFrameKey);
+        const year = Number.parseInt(timeFrameKey);
         if (!isNaN(year)) {
           return Math.floor(year / 10) * 10;
         }
