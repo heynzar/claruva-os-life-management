@@ -1,4 +1,5 @@
 "use client";
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,20 +15,16 @@ interface DeleteConfirmationDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: () => void;
-  title?: string;
-  description?: string;
-  cancelText?: string;
-  confirmText?: string;
+  title: string;
+  description: string;
 }
 
 export default function DeleteConfirmationDialog({
   isOpen,
   onClose,
   onConfirm,
-  title = "Delete Habit",
-  description = "This will delete the recurring habit and all its tracking data. This action cannot be undone.",
-  cancelText = "Cancel",
-  confirmText = "Delete",
+  title,
+  description,
 }: DeleteConfirmationDialogProps) {
   return (
     <AlertDialog open={isOpen} onOpenChange={onClose}>
@@ -37,12 +34,12 @@ export default function DeleteConfirmationDialog({
           <AlertDialogDescription>{description}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>{cancelText}</AlertDialogCancel>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
           <AlertDialogAction
             onClick={onConfirm}
-            className="bg-red-600 hover:bg-red-700 text-white border-none"
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >
-            {confirmText}
+            Delete
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

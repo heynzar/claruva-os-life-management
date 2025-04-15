@@ -1,4 +1,6 @@
 "use client";
+
+import { useState } from "react";
 import {
   Sheet,
   SheetContent,
@@ -20,13 +22,10 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import TaskDialog from "../task-dialog/add-task-dialog";
-import { Task, useTaskStore } from "@/stores/useTaskStore";
-import { useState } from "react";
+import TaskDialog from "@/components/task-dialog/task-dialog";
 
 const Sidebar = () => {
   const pathname = usePathname();
-  const { updateTask } = useTaskStore();
 
   const navigationItems = [
     { href: "/", label: "Home", icon: Home },
@@ -41,9 +40,6 @@ const Sidebar = () => {
     setIsDialogOpen(true);
   };
 
-  const handleTaskUpdate = (updates: Partial<Task>) => {
-    updateTask(id, updates);
-  };
   return (
     <Sheet>
       <SheetTrigger asChild>
@@ -90,29 +86,22 @@ const Sidebar = () => {
         </nav>
 
         <div className="px-4">
+          {/* Task Dialog */}
           <TaskDialog
             dialog_type="add"
-            id={"1"}
-            name={""}
-            description={""}
-            type={"daily"}
-            tags={[]}
-            priority={"low"}
-            timeFrameKey={""}
-            repeatedDays={[]}
-            dueDate={""}
-            pomodoros={0}
-            onUpdate={handleTaskUpdate}
+            defaultType="daily"
             open={isDialogOpen}
             onOpenChange={setIsDialogOpen}
           />
+
+          {/* Add Task Button */}
           <Button
             onClick={handleOpenDialog}
             variant="outline"
             size="sm"
             className="w-full font-normal"
           >
-            <Plus />
+            <Plus className="size-4" />
             Add Task
           </Button>
         </div>

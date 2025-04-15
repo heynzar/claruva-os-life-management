@@ -18,14 +18,13 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Info, Check, ChevronDown } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 type Day = {
   id: string;
   label: string;
 };
 
-type Goal = {
+type Tag = {
   id: string;
   label: string;
 };
@@ -45,7 +44,7 @@ export default function HomePreferencePopover({
     { id: "life", label: "L" },
   ];
 
-  const goals: Goal[] = [
+  const tags: Tag[] = [
     { id: "health", label: "Health" },
     { id: "work", label: "Work" },
     { id: "learning", label: "Learning" },
@@ -61,8 +60,8 @@ export default function HomePreferencePopover({
   const [selectedDays, setSelectedDays] = useState<string[]>([]);
   const [showCompleted, setShowCompleted] = useState(false);
   const [showHabits, setShowHabits] = useState(false);
-  const [selectedGoals, setSelectedGoals] = useState<string[]>([]);
-  const [goalPopoverOpen, setGoalPopoverOpen] = useState(false);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [tagPopoverOpen, setTagPopoverOpen] = useState(false);
 
   useEffect(() => {
     setSelectedDays(days.slice(0, 5).map((d) => d.id));
@@ -81,11 +80,11 @@ export default function HomePreferencePopover({
     });
   };
 
-  const toggleGoal = (goalId: string) => {
-    setSelectedGoals((prev) =>
-      prev.includes(goalId)
-        ? prev.filter((id) => id !== goalId)
-        : [...prev, goalId]
+  const toggleTag = (tagId: string) => {
+    setSelectedTags((prev) =>
+      prev.includes(tagId)
+        ? prev.filter((id) => id !== tagId)
+        : [...prev, tagId]
     );
   };
 
@@ -113,6 +112,7 @@ export default function HomePreferencePopover({
             role="group"
             aria-label="Select up to 5 Boards"
           >
+            {/** basically this component change the page.tsx layout view, it change which board are shown in the page.tsx, so user can customize the page view and select 5 board to be shown */}
             {days.map((day) => {
               const isSelected = selectedDays.includes(day.id);
               const isDisabled = !isSelected && isMaxSelected;
@@ -184,37 +184,38 @@ export default function HomePreferencePopover({
           <Separator className="my-4" />
 
           <div className="space-y-2">
-            <Label id="goals-label">Filter by Goals</Label>
-            <Popover open={goalPopoverOpen} onOpenChange={setGoalPopoverOpen}>
+            <Label id="tags-label">Filter by Tags</Label>
+            <Popover open={tagPopoverOpen} onOpenChange={setTagPopoverOpen}>
               <PopoverTrigger asChild>
                 <Button
+                  size="sm"
                   variant="outline"
                   role="combobox"
                   className="w-full justify-between"
                   aria-haspopup="listbox"
-                  aria-labelledby="goals-label"
+                  aria-labelledby="tags-label"
                 >
-                  {selectedGoals.length > 0
-                    ? `${selectedGoals.length} selected`
-                    : "Select goals"}
+                  {selectedTags.length > 0
+                    ? `${selectedTags.length} selected`
+                    : "Select tags"}
                   <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="!w-[300px] p-0">
                 <Command className="w-full max-h-44">
-                  <CommandInput placeholder="Search goals..." />
-                  <CommandEmpty>No goal found.</CommandEmpty>
+                  <CommandInput placeholder="Search tags..." />
+                  <CommandEmpty>No tag found.</CommandEmpty>
                   <CommandGroup className="overflow-auto">
-                    {goals.map((goal) => (
+                    {tags.map((tag) => (
                       <CommandItem
-                        key={goal.id}
-                        onSelect={() => toggleGoal(goal.id)}
+                        key={tag.id}
+                        onSelect={() => toggleTag(tag.id)}
                         className="flex justify-between"
                         role="option"
-                        aria-selected={selectedGoals.includes(goal.id)}
+                        aria-selected={selectedTags.includes(tag.id)}
                       >
-                        {goal.label}
-                        {selectedGoals.includes(goal.id) && (
+                        {tag.label}
+                        {selectedTags.includes(tag.id) && (
                           <Check className="w-4 h-4 text-primary" />
                         )}
                       </CommandItem>
