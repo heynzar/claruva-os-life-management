@@ -1,26 +1,24 @@
 "use client";
 
 import type React from "react";
-
 import { useRef } from "react";
 import { format, isToday, isYesterday, isTomorrow } from "date-fns";
-import type { Task } from "@/stores/useTaskStore";
-import AddTaskButton from "./add-task-button";
 import { Droppable } from "@hello-pangea/dnd";
+import AddTaskButton from "./add-task-button";
 
 interface DayContainerProps {
   date: string; // format: "YYYY-MM-DD"
-  tasks: Task[];
+  tasks: any[];
   children?: React.ReactNode;
   droppableId: string; // Unique ID for the droppable area
 }
 
-export default function DayContainer({
+const DayContainer = ({
   date,
   tasks,
   children,
   droppableId,
-}: DayContainerProps) {
+}: DayContainerProps) => {
   const dateObj = new Date(date);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -42,10 +40,12 @@ export default function DayContainer({
     >
       <h2 className="flex flex-col m-4">
         <p className="text-muted-foreground text-sm flex items-center justify-between gap-2">
-          {format(dateObj, "MMM dd, yyyy")}
+          {format(dateObj, "MMM d, yyyy")}
           {spanLabel && (
             <span
-              className={`text-xs ${spanLabel === "Today" && "text-primary"}`}
+              className={`text-xs ${
+                spanLabel === "Today" ? "text-primary" : ""
+              }`}
             >
               {spanLabel}
             </span>
@@ -58,7 +58,7 @@ export default function DayContainer({
           <ul
             ref={provided.innerRef}
             {...provided.droppableProps}
-            className={`w-full flex flex-col h-full border-t border-muted ${
+            className={`w-full flex flex-col h-full border-t border-muted overflow-y-auto ${
               snapshot.isDraggingOver ? "bg-muted/60" : ""
             }`}
             style={{
@@ -75,4 +75,6 @@ export default function DayContainer({
       </Droppable>
     </section>
   );
-}
+};
+
+export default DayContainer;
