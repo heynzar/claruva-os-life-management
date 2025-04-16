@@ -4,7 +4,6 @@ import type React from "react";
 import { useRef } from "react";
 import { Droppable } from "@hello-pangea/dnd";
 import AddTaskButton from "./add-task-button";
-import { getWeek, getYear, getMonth } from "date-fns";
 
 interface GoalContainerProps {
   title: string;
@@ -13,6 +12,7 @@ interface GoalContainerProps {
   type: "weekly" | "monthly" | "yearly" | "life";
   timeFrameKey: string;
   droppableId: string; // Unique ID for the droppable area
+  status?: "previous" | "current" | "next" | "other"; // New prop for container status
 }
 
 export default function GoalContainer({
@@ -22,31 +22,23 @@ export default function GoalContainer({
   type,
   timeFrameKey,
   droppableId,
+  status = "other",
 }: GoalContainerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Determine if this is the current period
-  const now = new Date();
-  const currentYear = getYear(now).toString();
-  const currentMonth = `${getYear(now)}-${(getMonth(now) + 1)
-    .toString()
-    .padStart(2, "0")}`;
-  const currentWeek = `${getYear(now)}-W${getWeek(now, { weekStartsOn: 1 })
-    .toString()
-    .padStart(2, "0")}`;
+  // Determine label based on status
+  let statusLabel = "";
+  let statusClass = "text-muted-foreground";
 
-  let isCurrent = false;
-  let currentLabel = "";
-
-  if (type === "weekly" && timeFrameKey === currentWeek) {
-    isCurrent = true;
-    currentLabel = "Current Week";
-  } else if (type === "monthly" && timeFrameKey === currentMonth) {
-    isCurrent = true;
-    currentLabel = "Current Month";
-  } else if (type === "yearly" && timeFrameKey === currentYear) {
-    isCurrent = true;
-    currentLabel = "Current Year";
+  if (status === "previous") {
+    statusLabel = "Previous";
+    statusClass = "text-muted-foreground";
+  } else if (status === "current") {
+    statusLabel = "Current";
+    statusClass = "text-primary";
+  } else if (status === "next") {
+    statusLabel = "Next";
+    statusClass = "text-muted-foreground";
   }
 
   return (
@@ -57,8 +49,8 @@ export default function GoalContainer({
       <h2 className="flex flex-col m-4">
         <p className="text-muted-foreground text-sm flex items-center justify-between gap-2">
           {subtitle}
-          {isCurrent && (
-            <span className="text-xs text-primary">{currentLabel}</span>
+          {statusLabel && (
+            <span className={`text-xs ${statusClass}`}>{statusLabel}</span>
           )}
         </p>
         <span className="text-2xl font-medium uppercase">{title}</span>
