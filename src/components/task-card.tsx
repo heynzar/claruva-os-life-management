@@ -62,11 +62,11 @@ const TaskCard = ({
   const getPriorityColor = () => {
     switch (priority) {
       case "high":
-        return "bg-red-500";
+        return "bg-red-500 border-red-500";
       case "medium":
-        return "bg-yellow-500";
+        return "bg-yellow-500 border-yellow-500";
       case "low":
-        return "bg-primary";
+        return "bg-primary border-primary";
       default:
         return "";
     }
@@ -103,6 +103,7 @@ const TaskCard = ({
             timeFrameKey={timeFrameKey}
             repeatedDays={repeatedDays}
             pomodoros={pomodoros}
+            isRepeating={isRepeating}
             onEditClick={handleOpenDialog}
           >
             <li
@@ -112,7 +113,7 @@ const TaskCard = ({
               id={id}
               className={`border-b cursor-grab border-muted flex items-center transition-colors ${
                 snapshot.isDragging ? "bg-muted shadow-lg" : "hover:bg-muted/40"
-              } `}
+              }`}
               style={{
                 ...provided.draggableProps.style,
                 // Fix for animation glitch when dropping at the top
@@ -126,7 +127,7 @@ const TaskCard = ({
                   e.stopPropagation();
                   toggleComplete(id, date);
                 }}
-                className={`size-5 cursor-pointer flex items-center justify-center aspect-square m-3 border-2 rounded-md transition-all ${
+                className={`size-5 cursor-pointer text-white flex items-center justify-center aspect-square m-3 border-2 rounded-md transition-all ${
                   isCompletedForDate
                     ? getPriorityColor()
                     : "border-muted-foreground/40 hover:border-muted-foreground"
@@ -135,7 +136,7 @@ const TaskCard = ({
                   isCompletedForDate ? "Mark as incomplete" : "Mark as complete"
                 }
               >
-                {isCompletedForDate && <Check size={12} strokeWidth={3} />}
+                {isCompletedForDate && <Check size={12} strokeWidth={4} />}
               </button>
 
               <button
