@@ -11,18 +11,16 @@ import {
 } from "@/components/ui/sheet";
 import { ProfileActions } from "./profile-actions";
 import { Button } from "@/components/ui/button";
-import {
-  PanelRight,
-  Home,
-  Target,
-  Calendar,
-  Timer,
-  Map,
-  Plus,
-} from "lucide-react";
+import { PanelRight, Home, Target, Crown, Map, Plus, Leaf } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import TaskDialog from "@/components/task-dialog/task-dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 const Sidebar = () => {
   const pathname = usePathname();
@@ -30,8 +28,8 @@ const Sidebar = () => {
   const navigationItems = [
     { href: "/", label: "Home", icon: Home },
     { href: "/goals", label: "Goals", icon: Target },
-    { href: "/habits", label: "Habits", icon: Calendar },
-    { href: "/pomodoros", label: "Pomodoros", icon: Timer },
+    { href: "/life", label: "Life", icon: Crown },
+    { href: "/pomodoros", label: "Focus", icon: Leaf },
     { href: "/journey", label: "Journey", icon: Map },
   ];
 
@@ -73,7 +71,7 @@ const Sidebar = () => {
                     <Button
                       size="sm"
                       variant={isActive ? "secondary" : "ghost"}
-                      className={"w-full justify-start font-normal"}
+                      className="w-full justify-start font-normal"
                     >
                       <item.icon className="mr-2 h-5 w-5" />
                       {item.label}
@@ -94,16 +92,28 @@ const Sidebar = () => {
             onOpenChange={setIsDialogOpen}
           />
 
-          {/* Add Task Button */}
-          <Button
-            onClick={handleOpenDialog}
-            variant="outline"
-            size="sm"
-            className="w-full font-normal"
-          >
-            <Plus className="size-4" />
-            Add Task
-          </Button>
+          {/* Add Task Button with Tooltip */}
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  onClick={handleOpenDialog}
+                  variant="outline"
+                  size="sm"
+                  className="w-full font-normal"
+                >
+                  <Plus className="size-4" />
+                  Add Task
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent className="bg-accent">
+                Add a new task to your list{" "}
+                <kbd className="px-1.5 rounded-sm ml-1 bg-muted-foreground/30 text-xs font-semibold border">
+                  d
+                </kbd>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
       </SheetContent>
     </Sheet>
