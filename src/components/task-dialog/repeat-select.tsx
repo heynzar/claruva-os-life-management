@@ -71,12 +71,7 @@ const RepeatSelect = ({
     };
 
     return (
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={handleToggle}
-        className={isRepeating ? "text-primary" : ""}
-      >
+      <Button variant="outline" size="sm" onClick={handleToggle}>
         <Repeat
           className={`${
             isRepeating ? "text-primary" : "opacity-70"

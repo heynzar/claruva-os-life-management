@@ -2,7 +2,7 @@
 
 import type React from "react";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -32,6 +32,7 @@ interface TaskDialogProps {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   onTaskCreated?: (task: Task) => void;
+  preventInitialInput?: boolean; // New prop to prevent initial input
 }
 
 export default function TaskDialog({
@@ -43,6 +44,7 @@ export default function TaskDialog({
   open,
   onOpenChange,
   onTaskCreated,
+  preventInitialInput = false,
 }: TaskDialogProps) {
   const [internalOpen, setInternalOpen] = useState(false);
   const [newName, setNewName] = useState("");
@@ -59,6 +61,7 @@ export default function TaskDialog({
   const [newRepeatedDays, setNewRepeatedDays] = useState<string[]>([]);
   const [newPomodoros, setNewPomodoros] = useState(0);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const { addTask, updateTask, deleteTask } = useTaskStore();
 
@@ -178,6 +181,24 @@ export default function TaskDialog({
     }
   }, [open]);
 
+  // Focus input when dialog opens and clear any initial input if needed
+  useEffect(() => {
+    if ((open || internalOpen) && inputRef.current) {
+      // Focus the input
+      setTimeout(() => {
+        if (inputRef.current) {
+          inputRef.current.focus();
+
+          // If we need to prevent initial input (from keyboard shortcut)
+          if (preventInitialInput) {
+            // Clear any selection that might have occurred
+            inputRef.current.setSelectionRange(0, 0);
+          }
+        }
+      }, 100);
+    }
+  }, [open, internalOpen, preventInitialInput]);
+
   // Controlled open state (internal or external)
   const isOpen = open !== undefined ? open : internalOpen;
 
@@ -280,20 +301,27 @@ export default function TaskDialog({
 
           {/* Task Name Input */}
           <input
+            ref={inputRef}
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
             placeholder={newType === "daily" ? "Task name" : "Goal name"}
             className="h-10 pl-2 font-medium text-xl outline-none"
             onKeyDown={handleKeyDown}
-            autoFocus
           />
 
           {/* Description Input */}
           <textarea
             value={newDescription}
-            onChange={(e) => setNewDescription(e.target.value)}
+            onChange={(e) => {
+              setNewDescription(e.target.value);
+              // Reset height to auto to correctly calculate scrollHeight
+              e.target.style.height = "2rem"; // h-8 is equivalent to 2rem
+              const scrollHeight = e.target.scrollHeight;
+              // Set height based on content but cap at h-20 (5rem)
+              e.target.style.height = `${Math.min(scrollHeight, 80)}px`; // 80px = 5rem (h-20)
+            }}
             placeholder="Description"
-            className="!h-8 resize-none text-muted-foreground pl-2 outline-none text-sm"
+            className="h-auto min-h-8 max-h-20 overflow-y-auto resize-none w-full text-muted-foreground pl-2 outline-none text-sm transition-all duration-150"
             onKeyDown={(e) => {
               // Allow line breaks with Shift+Enter
               if (e.key === "Enter" && !e.shiftKey) {
