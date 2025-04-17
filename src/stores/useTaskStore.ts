@@ -18,6 +18,7 @@ type Task = {
   position?: number; // For static ordering (non-repeating)
   completedDates?: string[]; // For tracking recurring completions
   positionsByDate?: Record<string, number>; // Kanban order per day
+  positionsByTimeFrame?: Record<string, number>; // For tracking positions of repeating goals in different timeframes
   priority: "low" | "medium" | "high";
   tags?: string[]; // E.g., ['Spiritual', 'Health', 'Work']
 };
@@ -36,12 +37,18 @@ type TaskStore = {
     date: string,
     position: number
   ) => void;
+  setGoalPositionForTimeFrame: (
+    taskId: string,
+    timeFrame: string,
+    position: number
+  ) => void;
 
   // Selectors
   getTasksForDate: (date: string) => Task[];
   getTasksByType: (type: Task["type"], timeFrameKey?: string) => Task[];
   isTaskCompletedOnDate: (taskId: string, date: string) => boolean;
   getTaskPositionForDate: (taskId: string, date: string) => number;
+  getGoalPositionForTimeFrame: (taskId: string, timeFrame: string) => number;
 };
 
 export const useTaskStore = create<TaskStore>()(
@@ -61,6 +68,11 @@ export const useTaskStore = create<TaskStore>()(
             // Initialize positionsByDate if not present
             if (!task.positionsByDate) {
               task.positionsByDate = {};
+            }
+
+            // Initialize positionsByTimeFrame if not present
+            if (!task.positionsByTimeFrame) {
+              task.positionsByTimeFrame = {};
             }
 
             // Set position if not provided
@@ -103,6 +115,15 @@ export const useTaskStore = create<TaskStore>()(
               task.dueDate
             ) {
               task.positionsByDate[task.dueDate] = task.position || 0;
+            }
+
+            // If it's a repeating goal, set the initial position for the timeframe
+            if (
+              task.type !== "daily" &&
+              task.repeatedDays?.length &&
+              task.timeFrameKey
+            ) {
+              task.positionsByTimeFrame[task.timeFrameKey] = task.position || 0;
             }
 
             state.tasks.push(task);
@@ -188,6 +209,26 @@ export const useTaskStore = create<TaskStore>()(
           })
         ),
 
+      // Set position for a goal in a specific timeframe
+      setGoalPositionForTimeFrame: (taskId, timeFrame, position) =>
+        set(
+          produce((state: TaskStore) => {
+            const task = state.tasks.find((t) => t.id === taskId);
+            if (!task) return;
+
+            // For repeating goals
+            if (task.type !== "daily" && task.repeatedDays?.length) {
+              if (!task.positionsByTimeFrame) {
+                task.positionsByTimeFrame = {};
+              }
+              task.positionsByTimeFrame[timeFrame] = position;
+            } else {
+              // For non-repeating goals
+              task.position = position;
+            }
+          })
+        ),
+
       // 🔁 Reorder tasks based on sorted ids for a given day
       reorderTasks: (day, orderedIds) =>
         set(
@@ -207,6 +248,12 @@ export const useTaskStore = create<TaskStore>()(
                     task.positionsByDate = {};
                   }
                   task.positionsByDate[day] = index + 1;
+                } else if (task.type !== "daily" && task.repeatedDays?.length) {
+                  // For repeating goals
+                  if (!task.positionsByTimeFrame) {
+                    task.positionsByTimeFrame = {};
+                  }
+                  task.positionsByTimeFrame[day] = index + 1;
                 } else {
                   // For non-repeating tasks or goal-type tasks
                   task.position = index + 1;
@@ -230,6 +277,20 @@ export const useTaskStore = create<TaskStore>()(
         }
 
         // For non-repeating tasks or goal-type tasks
+        return task.position || 999;
+      },
+
+      // Get position for a goal in a specific timeframe
+      getGoalPositionForTimeFrame: (taskId, timeFrame) => {
+        const task = get().tasks.find((t) => t.id === taskId);
+        if (!task) return 999;
+
+        // For repeating goals
+        if (task.type !== "daily" && task.repeatedDays?.length) {
+          return task.positionsByTimeFrame?.[timeFrame] || task.position || 999;
+        }
+
+        // For non-repeating goals
         return task.position || 999;
       },
 
@@ -279,12 +340,68 @@ export const useTaskStore = create<TaskStore>()(
             // Match the task type
             if (t.type !== type) return false;
 
-            // If timeFrameKey is provided, match that too
-            if (timeFrameKey && t.timeFrameKey !== timeFrameKey) return false;
+            // If timeFrameKey is provided, match that too or check if it's a repe  return false
+
+            // If timeFrameKey is provided, match that too or check if it's a repeating goal
+            if (timeFrameKey) {
+              // Check if it's a repeating goal that should appear in this timeframe
+              const isRepeatingGoal = t.repeatedDays?.includes(type);
+
+              // For repeating goals, check if the original timeFrameKey is before or equal to the requested one
+              if (isRepeatingGoal && t.timeFrameKey) {
+                // Compare timeFrameKeys based on type
+                if (type === "weekly") {
+                  // For weekly goals, compare year and week
+                  const [tYear, tWeek] = t.timeFrameKey.split("-W");
+                  const [reqYear, reqWeek] = timeFrameKey.split("-W");
+
+                  if (
+                    Number(tYear) < Number(reqYear) ||
+                    (Number(tYear) === Number(reqYear) &&
+                      Number(tWeek) <= Number(reqWeek))
+                  ) {
+                    return true;
+                  }
+                } else if (type === "monthly") {
+                  // For monthly goals, compare year and month
+                  const [tYear, tMonth] = t.timeFrameKey.split("-");
+                  const [reqYear, reqMonth] = timeFrameKey.split("-");
+
+                  if (
+                    Number(tYear) < Number(reqYear) ||
+                    (Number(tYear) === Number(reqYear) &&
+                      Number(tMonth) <= Number(reqMonth))
+                  ) {
+                    return true;
+                  }
+                } else if (type === "yearly") {
+                  // For yearly goals, compare years
+                  if (Number(t.timeFrameKey) <= Number(timeFrameKey)) {
+                    return true;
+                  }
+                }
+              }
+
+              // If not a repeating goal or doesn't meet the criteria, check exact match
+              return t.timeFrameKey === timeFrameKey;
+            }
 
             return true;
           })
-          .sort((a, b) => (a.position || 999) - (b.position || 999));
+          .sort((a, b) => {
+            // Sort by position, using the timeframe-specific position for repeating goals
+            if (timeFrameKey) {
+              const posA = a.repeatedDays?.includes(type)
+                ? a.positionsByTimeFrame?.[timeFrameKey] || a.position || 999
+                : a.position || 999;
+              const posB = b.repeatedDays?.includes(type)
+                ? b.positionsByTimeFrame?.[timeFrameKey] || b.position || 999
+                : b.position || 999;
+              return posA - posB;
+            }
+
+            return (a.position || 999) - (b.position || 999);
+          });
       },
 
       // Check if a task is completed on a specific date
