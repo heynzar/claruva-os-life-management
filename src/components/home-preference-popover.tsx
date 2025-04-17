@@ -1,71 +1,122 @@
 "use client";
 
+import type React from "react";
+
 import { useEffect, useState } from "react";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-} from "@/components/ui/command";
 import { Separator } from "@/components/ui/separator";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Info, Check, ChevronDown } from "lucide-react";
+import { Info, Flag, RotateCcw } from "lucide-react";
+import TagsSelect from "@/components/task-dialog/tags-select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import PrioritySelect from "./task-dialog/priority-select";
 
 type Day = {
   id: string;
   label: string;
 };
 
-type Tag = {
-  id: string;
-  label: string;
+export interface HomePreferences {
+  selectedDays: string[];
+  showCompleted: boolean;
+  showHabits: boolean;
+  selectedTags: string[];
+  selectedPriority: "high" | "medium" | "low" | null;
+  duplicateWhenDragging?: boolean; // New preference for drag behavior
+}
+
+// Default preferences
+export const defaultPreferences: HomePreferences = {
+  selectedDays: ["yesterday", "today", "tomorrow", "week", "month"],
+  showCompleted: true,
+  showHabits: true,
+  selectedTags: [],
+  selectedPriority: null,
+  duplicateWhenDragging: false, // Default to false (move instead of duplicate)
 };
+
+interface HomePreferencePopoverProps {
+  children: React.ReactNode;
+  preferences?: HomePreferences;
+  onPreferencesChange: (preferences: HomePreferences) => void;
+}
 
 export default function HomePreferencePopover({
   children,
-}: {
-  children: React.ReactNode;
-}) {
+  preferences = defaultPreferences,
+  onPreferencesChange,
+}: HomePreferencePopoverProps) {
   const days: Day[] = [
-    { id: "yesterday", label: "Y" },
-    { id: "today", label: "T" },
-    { id: "tomorrow", label: "T" },
-    { id: "week", label: "W" },
-    { id: "month", label: "M" },
-    { id: "year", label: "Y" },
-    { id: "life", label: "L" },
+    { id: "yesterday", label: "Yesterday" },
+    { id: "today", label: "Today" },
+    { id: "tomorrow", label: "Tomorrow" },
+    { id: "week", label: "Week" },
+    { id: "month", label: "Month" },
+    { id: "year", label: "Year" },
+    { id: "life", label: "Life" },
   ];
 
-  const tags: Tag[] = [
-    { id: "health", label: "Health" },
-    { id: "work", label: "Work" },
-    { id: "learning", label: "Learning" },
-    { id: "social", label: "Social" },
-    { id: "finance", label: "Finance" },
-    { id: "personal", label: "Personal" },
-    { id: "family", label: "Family" },
-    { id: "creativity", label: "Creativity" },
-    { id: "fitness", label: "Fitness" },
-    { id: "mindfulness", label: "Mindfulness" },
+  const priorities = [
+    { id: "high", label: "High", color: "text-red-500" },
+    { id: "medium", label: "Medium", color: "text-yellow-500" },
+    { id: "low", label: "Low", color: "text-blue-400" },
   ];
 
-  const [selectedDays, setSelectedDays] = useState<string[]>([]);
-  const [showCompleted, setShowCompleted] = useState(false);
-  const [showHabits, setShowHabits] = useState(false);
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [tagPopoverOpen, setTagPopoverOpen] = useState(false);
+  const [selectedDays, setSelectedDays] = useState<string[]>(
+    preferences.selectedDays
+  );
+  const [showCompleted, setShowCompleted] = useState(preferences.showCompleted);
+  const [showHabits, setShowHabits] = useState(preferences.showHabits);
+  const [selectedTags, setSelectedTags] = useState<string[]>(
+    preferences.selectedTags
+  );
+  const [selectedPriority, setSelectedPriority] = useState<
+    "high" | "medium" | "low" | null
+  >(preferences.selectedPriority);
+  const [duplicateWhenDragging, setDuplicateWhenDragging] = useState(
+    preferences.duplicateWhenDragging || false
+  );
+  const [hasChanges, setHasChanges] = useState(false);
+  const [hasFilters, setHasFilters] = useState(false);
 
+  // Track changes to enable/disable save button
   useEffect(() => {
-    setSelectedDays(days.slice(0, 5).map((d) => d.id));
-  }, []);
+    const hasChanged =
+      JSON.stringify(selectedDays) !==
+        JSON.stringify(preferences.selectedDays) ||
+      showCompleted !== preferences.showCompleted ||
+      showHabits !== preferences.showHabits ||
+      JSON.stringify(selectedTags) !==
+        JSON.stringify(preferences.selectedTags) ||
+      selectedPriority !== preferences.selectedPriority ||
+      duplicateWhenDragging !== preferences.duplicateWhenDragging;
+
+    setHasChanges(hasChanged);
+  }, [
+    selectedDays,
+    showCompleted,
+    showHabits,
+    selectedTags,
+    selectedPriority,
+    duplicateWhenDragging,
+    preferences,
+  ]);
+
+  // Check if any filters are applied
+  useEffect(() => {
+    setHasFilters(
+      !showCompleted ||
+        !showHabits ||
+        selectedTags.length > 0 ||
+        selectedPriority !== null
+    );
+  }, [showCompleted, showHabits, selectedTags, selectedPriority]);
 
   const toggleDay = (dayId: string) => {
     setSelectedDays((prev) => {
@@ -80,12 +131,26 @@ export default function HomePreferencePopover({
     });
   };
 
-  const toggleTag = (tagId: string) => {
-    setSelectedTags((prev) =>
-      prev.includes(tagId)
-        ? prev.filter((id) => id !== tagId)
-        : [...prev, tagId]
-    );
+  const savePreferences = () => {
+    // Apply preferences
+    onPreferencesChange({
+      selectedDays,
+      showCompleted,
+      showHabits,
+      selectedTags,
+      selectedPriority,
+      duplicateWhenDragging,
+    });
+
+    setHasChanges(false);
+  };
+
+  const resetAllFilters = () => {
+    setShowCompleted(true);
+    setShowHabits(true);
+    setSelectedTags([]);
+    setSelectedPriority(null);
+    setHasChanges(true);
   };
 
   const isBoardCountInvalid = selectedDays.length !== 5;
@@ -95,7 +160,7 @@ export default function HomePreferencePopover({
     <Popover>
       <PopoverTrigger asChild>{children}</PopoverTrigger>
       <PopoverContent
-        className="w-80 p-2"
+        className="w-72 p-2"
         align="end"
         aria-label="Preferences Popover"
       >
@@ -112,7 +177,6 @@ export default function HomePreferencePopover({
             role="group"
             aria-label="Select up to 5 Boards"
           >
-            {/** basically this component change the page.tsx layout view, it change which board are shown in the page.tsx, so user can customize the page view and select 5 board to be shown */}
             {days.map((day) => {
               const isSelected = selectedDays.includes(day.id);
               const isDisabled = !isSelected && isMaxSelected;
@@ -140,15 +204,6 @@ export default function HomePreferencePopover({
               <Info className="size-3 mt-0.5" aria-hidden="true" />
               <span>Select exactly 5 boards to display</span>
             </div>
-
-            <Button
-              disabled={isBoardCountInvalid}
-              variant="default"
-              size="sm"
-              className="h-6"
-            >
-              save
-            </Button>
           </div>
 
           {isBoardCountInvalid && (
@@ -161,7 +216,7 @@ export default function HomePreferencePopover({
 
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <Label htmlFor="show-completed">Show completed Task</Label>
+              <Label htmlFor="show-completed">Show completed tasks</Label>
               <Switch
                 id="show-completed"
                 checked={showCompleted}
@@ -171,7 +226,7 @@ export default function HomePreferencePopover({
             </div>
 
             <div className="flex items-center justify-between">
-              <Label htmlFor="show-habits">Show Habits (Repeated tasks)</Label>
+              <Label htmlFor="show-habits">Show habits (repeated tasks)</Label>
               <Switch
                 id="show-habits"
                 checked={showHabits}
@@ -179,51 +234,104 @@ export default function HomePreferencePopover({
                 aria-label="Toggle habits"
               />
             </div>
+
+            <div className="flex items-center justify-between">
+              <Label htmlFor="duplicate-when-dragging">
+                Duplicate when dragging
+              </Label>
+              <Switch
+                id="duplicate-when-dragging"
+                checked={duplicateWhenDragging}
+                onCheckedChange={setDuplicateWhenDragging}
+                aria-label="Toggle duplicate when dragging"
+              />
+            </div>
           </div>
 
-          <Separator className="my-4" />
+          <Separator className="mt-4" />
 
-          <div className="space-y-2">
-            <Label id="tags-label">Filter by Tags</Label>
-            <Popover open={tagPopoverOpen} onOpenChange={setTagPopoverOpen}>
-              <PopoverTrigger asChild>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  role="combobox"
-                  className="w-full justify-between"
-                  aria-haspopup="listbox"
-                  aria-labelledby="tags-label"
-                >
-                  {selectedTags.length > 0
-                    ? `${selectedTags.length} selected`
-                    : "Select tags"}
-                  <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="!w-[300px] p-0">
-                <Command className="w-full max-h-44">
-                  <CommandInput placeholder="Search tags..." />
-                  <CommandEmpty>No tag found.</CommandEmpty>
-                  <CommandGroup className="overflow-auto">
-                    {tags.map((tag) => (
-                      <CommandItem
-                        key={tag.id}
-                        onSelect={() => toggleTag(tag.id)}
-                        className="flex justify-between"
-                        role="option"
-                        aria-selected={selectedTags.includes(tag.id)}
-                      >
-                        {tag.label}
-                        {selectedTags.includes(tag.id) && (
-                          <Check className="w-4 h-4 text-primary" />
-                        )}
-                      </CommandItem>
-                    ))}
-                  </CommandGroup>
-                </Command>
-              </PopoverContent>
-            </Popover>
+          <label
+            htmlFor="board-selection"
+            className="text-xs font-bold m-1 my-2"
+          >
+            Filter
+          </label>
+
+          <div className="flex flex-col gap-2">
+            <div>
+              <Label id="tags-label" className="sr-only">
+                Filter by Tags
+              </Label>
+              <TagsSelect
+                type="preference"
+                selectedTags={selectedTags}
+                setSelectedTags={setSelectedTags}
+              />
+            </div>
+            <div className="flex justify-between items-center">
+              <Label id="priority-label" className="sr-only">
+                Priority
+              </Label>
+              <RadioGroup
+                value={selectedPriority || ""}
+                onValueChange={(value) =>
+                  setSelectedPriority(
+                    value ? (value as "high" | "medium" | "low") : null
+                  )
+                }
+                className="flex w-full gap-2"
+              >
+                {priorities.map((priority) => (
+                  <div key={priority.id} className="flex flex-1 items-center">
+                    <RadioGroupItem
+                      value={priority.id}
+                      id={`priority-${priority.id}`}
+                      className="sr-only"
+                    />
+                    <Label
+                      htmlFor={`priority-${priority.id}`}
+                      className={
+                        buttonVariants({
+                          variant:
+                            selectedPriority === priority.id
+                              ? "secondary"
+                              : "outline",
+                          size: "sm",
+                        }) + "w w-full border"
+                      }
+                    >
+                      <Flag className={`size-4 ${priority.color}`} />
+                      <span className="text-xs">{priority.label}</span>
+                    </Label>
+                  </div>
+                ))}
+              </RadioGroup>
+            </div>
+          </div>
+
+          <Separator className="mt-4 mb-2" />
+
+          <div className="flex justify-between gap-2">
+            {hasFilters && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 flex-1"
+                onClick={resetAllFilters}
+              >
+                <RotateCcw className="size-3" />
+                Reset
+              </Button>
+            )}
+            <Button
+              disabled={isBoardCountInvalid || !hasChanges}
+              variant="default"
+              size="sm"
+              className="h-8 px-6 ml-auto"
+              onClick={savePreferences}
+            >
+              Apply
+            </Button>
           </div>
         </div>
       </PopoverContent>
