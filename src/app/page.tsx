@@ -24,9 +24,12 @@ import DayContainer from "@/components/day-container";
 import GoalContainer from "@/components/goal-container";
 import TaskCard from "@/components/task-card";
 import KeyboardShortcuts from "@/components/keyboard-shortcuts";
+import HomePreferencePopover, {
+  type HomePreferences,
+  defaultPreferences,
+} from "@/components/home-preference-popover";
 import { Button } from "@/components/ui/button";
 import { useTaskStore, type Task } from "@/stores/useTaskStore";
-import HomePreferencePopover from "@/components/home-preference-popover";
 
 // Initial tasks with proper typing
 const initialTasksData: Task[] = [
@@ -133,12 +136,39 @@ export default function Home() {
     updateTask,
     reorderTasks,
     getTaskPositionForDate,
+    isTaskCompletedOnDate,
   } = useTaskStore();
 
   // Current date state for navigation
   const [currentDate, setCurrentDate] = useState(
     format(new Date(), "yyyy-MM-dd")
   );
+
+  // User preferences state
+  const [preferences, setPreferences] =
+    useState<HomePreferences>(defaultPreferences);
+
+  // Load preferences from localStorage on initial render
+  useEffect(() => {
+    const savedPreferences = localStorage.getItem("homePreferences");
+    if (savedPreferences) {
+      try {
+        const parsedPreferences = JSON.parse(savedPreferences);
+        setPreferences({
+          ...defaultPreferences,
+          ...parsedPreferences,
+        });
+      } catch (e) {
+        console.error("Error loading preferences:", e);
+      }
+    }
+  }, []);
+
+  // Handle preferences change
+  const handlePreferencesChange = (newPreferences: HomePreferences) => {
+    setPreferences(newPreferences);
+    localStorage.setItem("homePreferences", JSON.stringify(newPreferences));
+  };
 
   // Check if we're showing today or a different day
   const isCurrentDateToday = isToday(new Date(currentDate));
@@ -180,6 +210,63 @@ export default function Home() {
   const monthlyGoals = getTasksByType("monthly", currentMonth);
   const yearlyGoals = getTasksByType("yearly", currentYear);
   const lifeGoals = getTasksByType("life", "life");
+
+  // Apply filters based on preferences
+  const filterTasks = (tasks: Task[], date: string) => {
+    let filteredTasks = [...tasks];
+
+    // Filter by completion status - handle both regular completion and date-specific completion
+    if (!preferences.showCompleted) {
+      filteredTasks = filteredTasks.filter((task) => {
+        // For repeating tasks or tasks shown on a different day than their due date
+        if (
+          (task.type === "daily" && task.repeatedDays?.length) ||
+          (task.type === "daily" && task.dueDate !== date)
+        ) {
+          return !isTaskCompletedOnDate(task.id, date);
+        }
+        // For non-repeating tasks
+        return !task.isCompleted;
+      });
+    }
+
+    // Filter by habits (repeated tasks)
+    if (!preferences.showHabits) {
+      filteredTasks = filteredTasks.filter(
+        (task) => !task.repeatedDays?.length
+      );
+    }
+
+    // Filter by tags - case insensitive comparison
+    if (preferences.selectedTags.length > 0) {
+      filteredTasks = filteredTasks.filter((task) => {
+        if (!task.tags || task.tags.length === 0) return false;
+        return preferences.selectedTags.some((selectedTag) =>
+          task.tags!.some(
+            (taskTag) => taskTag.toLowerCase() === selectedTag.toLowerCase()
+          )
+        );
+      });
+    }
+
+    // Filter by priority
+    if (preferences.selectedPriority !== null) {
+      filteredTasks = filteredTasks.filter(
+        (task) => task.priority === preferences.selectedPriority
+      );
+    }
+
+    return filteredTasks;
+  };
+
+  // Apply filters to all task lists
+  const filteredYesterdayTasks = filterTasks(yesterdayTasks, yesterdayDate);
+  const filteredTodayTasks = filterTasks(todayTasks, currentDate);
+  const filteredTomorrowTasks = filterTasks(tomorrowTasks, tomorrowDate);
+  const filteredWeeklyGoals = filterTasks(weeklyGoals, currentDate);
+  const filteredMonthlyGoals = filterTasks(monthlyGoals, currentDate);
+  const filteredYearlyGoals = filterTasks(yearlyGoals, currentDate);
+  const filteredLifeGoals = filterTasks(lifeGoals, currentDate);
 
   // Navigation functions
   const navigatePreviousDay = () => {
@@ -352,50 +439,110 @@ export default function Home() {
           destTimeFrameKey = timeFrameKey;
         }
 
-        // Create a new task with appropriate type and timeFrameKey
-        const newTask: Task = {
-          id: uuidv4(),
-          name: task.name,
-          description: task.description,
-          isCompleted: false,
-          type: destType,
-          dueDate: isDestDayContainer ? destination.droppableId : undefined,
-          timeFrameKey: destTimeFrameKey,
-          tags: task.tags,
-          priority: task.priority,
-          // Set appropriate repeatedDays based on destination type
-          repeatedDays:
-            destType !== "daily" && destType !== "life" ? [destType] : [],
-          pomodoros: task.pomodoros,
-          position: 999,
-          completedDates: [],
-          positionsByDate: {},
-        };
+        // Check if we should duplicate or move
+        const shouldDuplicate =
+          preferences.duplicateWhenDragging ||
+          task.repeatedDays?.length ||
+          false;
 
-        // Add the new task
-        addTask(newTask);
+        if (shouldDuplicate) {
+          // Create a new task with appropriate type and timeFrameKey (duplicate behavior)
+          const newTask: Task = {
+            id: uuidv4(),
+            name: task.name,
+            description: task.description,
+            isCompleted: false,
+            type: destType,
+            dueDate: isDestDayContainer ? destination.droppableId : undefined,
+            timeFrameKey: destTimeFrameKey,
+            tags: task.tags,
+            priority: task.priority,
+            // Don't make it repetitive by default
+            repeatedDays: [],
+            pomodoros: task.pomodoros,
+            position: 999,
+            completedDates: [],
+            positionsByDate: {},
+            positionsByTimeFrame: {},
+          };
 
-        // Get the current task IDs for the destination container
-        let destinationTaskIds: string[];
+          // Add the new task
+          addTask(newTask);
 
-        if (isDestDayContainer) {
-          destinationTaskIds = getTaskIdsForDay(destination.droppableId).map(
-            extractTaskId
-          );
+          // Get the current task IDs for the destination container
+          let destinationTaskIds: string[];
+
+          if (isDestDayContainer) {
+            destinationTaskIds = getTaskIdsForDay(destination.droppableId).map(
+              extractTaskId
+            );
+          } else {
+            destinationTaskIds = getGoalIds(
+              destType,
+              destTimeFrameKey || ""
+            ).map(extractTaskId);
+          }
+
+          // Insert the new task at the destination index
+          destinationTaskIds.splice(destination.index, 0, newTask.id);
+
+          // Update the positions
+          if (isDestDayContainer) {
+            reorderTasks(destination.droppableId, destinationTaskIds);
+          } else if (destTimeFrameKey) {
+            reorderTasks(destTimeFrameKey, destinationTaskIds);
+          }
         } else {
-          destinationTaskIds = getGoalIds(destType, destTimeFrameKey || "").map(
-            extractTaskId
-          );
-        }
+          // Move the task by updating its type and other properties
+          const updates: Partial<Task> = {
+            type: destType,
+          };
 
-        // Insert the new task at the destination index
-        destinationTaskIds.splice(destination.index, 0, newTask.id);
+          if (isDestDayContainer) {
+            updates.dueDate = destination.droppableId;
+            updates.timeFrameKey = undefined;
+          } else {
+            updates.dueDate = undefined;
+            updates.timeFrameKey = destTimeFrameKey;
+          }
 
-        // Update the positions
-        if (isDestDayContainer) {
-          reorderTasks(destination.droppableId, destinationTaskIds);
-        } else if (destTimeFrameKey) {
-          reorderTasks(destTimeFrameKey, destinationTaskIds);
+          updateTask(taskId, updates);
+
+          // Remove from source container
+          if (isSourceDayContainer) {
+            const sourceTaskIds = getTaskIdsForDay(source.droppableId)
+              .filter((id) => extractTaskId(id) !== taskId)
+              .map(extractTaskId);
+            reorderTasks(source.droppableId, sourceTaskIds);
+          } else {
+            const [, sourceTimeFrameKey] = source.droppableId.split(":");
+            const sourceTaskIds = getGoalIds(task.type, sourceTimeFrameKey)
+              .filter((id) => id !== taskId)
+              .map(extractTaskId);
+            reorderTasks(sourceTimeFrameKey, sourceTaskIds);
+          }
+
+          // Add to destination container
+          let destinationTaskIds: string[];
+          if (isDestDayContainer) {
+            destinationTaskIds = getTaskIdsForDay(destination.droppableId)
+              .filter((id) => extractTaskId(id) !== taskId)
+              .map(extractTaskId);
+          } else {
+            destinationTaskIds = getGoalIds(destType, destTimeFrameKey || "")
+              .filter((id) => id !== taskId)
+              .map(extractTaskId);
+          }
+
+          // Insert at destination index
+          destinationTaskIds.splice(destination.index, 0, taskId);
+
+          // Update positions
+          if (isDestDayContainer) {
+            reorderTasks(destination.droppableId, destinationTaskIds);
+          } else if (destTimeFrameKey) {
+            reorderTasks(destTimeFrameKey, destinationTaskIds);
+          }
         }
       }
     }
@@ -459,6 +606,91 @@ export default function Home() {
     return format(new Date(), "MMMM");
   };
 
+  // Map board types to their components
+  const boardComponents = {
+    yesterday: (
+      <DayContainer
+        date={yesterdayDate}
+        tasks={filteredYesterdayTasks}
+        droppableId={yesterdayDate}
+      >
+        {filteredYesterdayTasks.map((task, index) =>
+          renderTaskCard(task, yesterdayDate, index)
+        )}
+      </DayContainer>
+    ),
+    today: (
+      <DayContainer
+        date={currentDate}
+        tasks={filteredTodayTasks}
+        droppableId={currentDate}
+      >
+        {filteredTodayTasks.map((task, index) =>
+          renderTaskCard(task, currentDate, index)
+        )}
+      </DayContainer>
+    ),
+    tomorrow: (
+      <DayContainer
+        date={tomorrowDate}
+        tasks={filteredTomorrowTasks}
+        droppableId={tomorrowDate}
+      >
+        {filteredTomorrowTasks.map((task, index) =>
+          renderTaskCard(task, tomorrowDate, index)
+        )}
+      </DayContainer>
+    ),
+    week: (
+      <GoalContainer
+        title={formatWeekDisplay()}
+        subtitle="Weekly Goals"
+        type="weekly"
+        timeFrameKey={currentWeek}
+        droppableId={`weekly:${currentWeek}`}
+        status="current"
+      >
+        {filteredWeeklyGoals.map((goal, index) => renderGoalCard(goal, index))}
+      </GoalContainer>
+    ),
+    month: (
+      <GoalContainer
+        title={formatMonthDisplay()}
+        subtitle="Monthly Goals"
+        type="monthly"
+        timeFrameKey={currentMonth}
+        droppableId={`monthly:${currentMonth}`}
+        status="current"
+      >
+        {filteredMonthlyGoals.map((goal, index) => renderGoalCard(goal, index))}
+      </GoalContainer>
+    ),
+    year: (
+      <GoalContainer
+        title={currentYear}
+        subtitle="Yearly Goals"
+        type="yearly"
+        timeFrameKey={currentYear}
+        droppableId={`yearly:${currentYear}`}
+        status="current"
+      >
+        {filteredYearlyGoals.map((goal, index) => renderGoalCard(goal, index))}
+      </GoalContainer>
+    ),
+    life: (
+      <GoalContainer
+        title="Life Goals"
+        subtitle="Long-term Goals"
+        type="life"
+        timeFrameKey="life"
+        droppableId="life:life"
+        status="current"
+      >
+        {filteredLifeGoals.map((goal, index) => renderGoalCard(goal, index))}
+      </GoalContainer>
+    ),
+  };
+
   return (
     <DragDropContext onDragEnd={handleDragEnd}>
       <div className="w-full h-screen flex flex-col items-end">
@@ -494,9 +726,10 @@ export default function Home() {
               <ChevronsRight />
             </Button>
 
-            {/* HomePreferencePopover will be implemented later */}
-
-            <HomePreferencePopover>
+            <HomePreferencePopover
+              preferences={preferences}
+              onPreferencesChange={handlePreferencesChange}
+            >
               <Button size="icon" variant="ghost" className="ml-2">
                 <span className="sr-only">Settings</span>
                 <Settings2Icon />
@@ -505,60 +738,12 @@ export default function Home() {
           </div>
         </header>
         <main className="w-full h-full bg-muted/20 grid grid-cols-5 gap-1 p-1 pt-0 overflow-hidden">
-          {/* Yesterday's tasks */}
-          <DayContainer
-            date={yesterdayDate}
-            tasks={yesterdayTasks}
-            droppableId={yesterdayDate}
-          >
-            {yesterdayTasks.map((task, index) =>
-              renderTaskCard(task, yesterdayDate, index)
-            )}
-          </DayContainer>
-
-          {/* Today's tasks */}
-          <DayContainer
-            date={currentDate}
-            tasks={todayTasks}
-            droppableId={currentDate}
-          >
-            {todayTasks.map((task, index) =>
-              renderTaskCard(task, currentDate, index)
-            )}
-          </DayContainer>
-
-          {/* Tomorrow's tasks */}
-          <DayContainer
-            date={tomorrowDate}
-            tasks={tomorrowTasks}
-            droppableId={tomorrowDate}
-          >
-            {tomorrowTasks.map((task, index) =>
-              renderTaskCard(task, tomorrowDate, index)
-            )}
-          </DayContainer>
-
-          {/* Week Goal */}
-          <GoalContainer
-            title={formatWeekDisplay()}
-            subtitle="Weekly Goals"
-            type="weekly"
-            timeFrameKey={currentWeek}
-            droppableId={`weekly:${currentWeek}`}
-          >
-            {weeklyGoals.map((goal, index) => renderGoalCard(goal, index))}
-          </GoalContainer>
-
-          {/* Month Goal */}
-          <GoalContainer
-            title={formatMonthDisplay()}
-            subtitle="Monthly Goals"
-            type="monthly"
-            timeFrameKey={currentMonth}
-            droppableId={`monthly:${currentMonth}`}
-          >
-            {monthlyGoals.map((goal, index) => renderGoalCard(goal, index))}
-          </GoalContainer>
+          {/* Render boards based on user preferences */}
+          {preferences.selectedDays.map((boardId) => (
+            <div key={boardId} className="w-full h-full">
+              {boardComponents[boardId as keyof typeof boardComponents]}
+            </div>
+          ))}
         </main>
       </div>
     </DragDropContext>
