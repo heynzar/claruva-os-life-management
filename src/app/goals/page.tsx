@@ -74,6 +74,7 @@ export default function GoalsPage() {
     updateTask,
     reorderTasks,
     getGoalPositionForTimeFrame,
+    setGoalPositionForTimeFrame,
   } = useTaskStore();
 
   // Current selected goal type
@@ -356,6 +357,11 @@ export default function GoalsPage() {
     return goals.map((goal) => goal.id);
   };
 
+  // Helper function to check if a goal is repetitive
+  const isGoalRepetitive = (goal: Task): boolean => {
+    return Boolean(goal.repeatedDays?.includes(goal.type));
+  };
+
   // Handle drag end event
   const handleDragEnd = (result: DropResult): void => {
     const { destination, source, draggableId } = result;
@@ -376,6 +382,13 @@ export default function GoalsPage() {
     const [sourceType, sourceTimeFrameKey] = source.droppableId.split(":");
     const [destType, destTimeFrameKey] = destination.droppableId.split(":");
 
+    // Get the task being dragged
+    const task = tasks.find((t) => t.id === taskId);
+    if (!task) return;
+
+    // Check if the task is repetitive
+    const isRepetitive = isGoalRepetitive(task);
+
     // If moving within the same container
     if (source.droppableId === destination.droppableId) {
       // Get all goal IDs for this container
@@ -388,14 +401,21 @@ export default function GoalsPage() {
       const [removed] = goalIds.splice(source.index, 1);
       goalIds.splice(destination.index, 0, removed);
 
-      // Update the goal positions
-      reorderTasks(sourceTimeFrameKey, goalIds);
+      // Update positions for each goal in the container
+      goalIds.forEach((id, index) => {
+        const goal = tasks.find((t) => t.id === id);
+        if (!goal) return;
+
+        if (isGoalRepetitive(goal)) {
+          // For repetitive goals, update position only for this specific timeframe
+          setGoalPositionForTimeFrame(id, sourceTimeFrameKey, index + 1);
+        } else {
+          // For non-repetitive goals, update the regular position
+          updateTask(id, { position: index + 1 });
+        }
+      });
     } else {
       // Moving between different containers
-      const task = tasks.find((t) => t.id === taskId);
-
-      if (!task) return;
-
       // Check if we should duplicate or move
       const shouldDuplicate = preferences.duplicateWhenDragging || false;
 
@@ -431,8 +451,19 @@ export default function GoalsPage() {
         // Insert the new goal at the destination index
         destinationGoalIds.splice(destination.index, 0, newTask.id);
 
-        // Update the positions
-        reorderTasks(destTimeFrameKey, destinationGoalIds);
+        // Update the positions for each goal in the destination container
+        destinationGoalIds.forEach((id, index) => {
+          const goal = tasks.find((t) => t.id === id);
+          if (!goal) return;
+
+          if (isGoalRepetitive(goal)) {
+            // For repetitive goals, update position only for this specific timeframe
+            setGoalPositionForTimeFrame(id, destTimeFrameKey, index + 1);
+          } else {
+            // For non-repetitive goals, update the regular position
+            updateTask(id, { position: index + 1 });
+          }
+        });
       } else {
         // Move the goal by updating its type and timeFrameKey (move behavior)
         updateTask(taskId, {
@@ -446,8 +477,19 @@ export default function GoalsPage() {
           sourceTimeFrameKey
         ).filter((id) => id !== taskId);
 
-        // Update the source container order
-        reorderTasks(sourceTimeFrameKey, sourceGoalIds);
+        // Update positions for each goal in the source container
+        sourceGoalIds.forEach((id, index) => {
+          const goal = tasks.find((t) => t.id === id);
+          if (!goal) return;
+
+          if (isGoalRepetitive(goal)) {
+            // For repetitive goals, update position only for this specific timeframe
+            setGoalPositionForTimeFrame(id, sourceTimeFrameKey, index + 1);
+          } else {
+            // For non-repetitive goals, update the regular position
+            updateTask(id, { position: index + 1 });
+          }
+        });
 
         // Get the current goal IDs for the destination container
         const destinationGoalIds = getGoalIds(
@@ -458,8 +500,19 @@ export default function GoalsPage() {
         // Insert the goal at the destination index
         destinationGoalIds.splice(destination.index, 0, taskId);
 
-        // Update the destination container order
-        reorderTasks(destTimeFrameKey, destinationGoalIds);
+        // Update positions for each goal in the destination container
+        destinationGoalIds.forEach((id, index) => {
+          const goal = tasks.find((t) => t.id === id);
+          if (!goal) return;
+
+          if (isGoalRepetitive(goal)) {
+            // For repetitive goals, update position only for this specific timeframe
+            setGoalPositionForTimeFrame(id, destTimeFrameKey, index + 1);
+          } else {
+            // For non-repetitive goals, update the regular position
+            updateTask(id, { position: index + 1 });
+          }
+        });
       }
     }
   };
@@ -471,6 +524,9 @@ export default function GoalsPage() {
 
     // For repeating goals, use a unique key that includes the timeframe
     const cardKey = isRepeating ? `${goal.id}-${timeFrameKey}` : goal.id;
+
+    // Create a unique draggable ID for repetitive goals
+    const draggableId = isRepeating ? `${goal.id}:${timeFrameKey}` : goal.id;
 
     return (
       <TaskCard
@@ -493,6 +549,7 @@ export default function GoalsPage() {
         index={index}
         isRepeating={isRepeating}
         repeatedDays={goal.repeatedDays || []}
+        draggableId={draggableId} // Pass the custom draggable ID
       />
     );
   };

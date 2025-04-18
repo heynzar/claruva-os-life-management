@@ -24,6 +24,7 @@ export interface TaskCardProps {
   position?: number;
   index: number; // Index for drag and drop
   isRepeating: boolean; // Whether this is a repeating task instance
+  draggableId?: string; // Optional custom draggable ID for repetitive goals
 }
 
 const TaskCard = ({
@@ -42,6 +43,7 @@ const TaskCard = ({
   position,
   index,
   isRepeating,
+  draggableId,
 }: TaskCardProps) => {
   const { updateTask, toggleComplete, isTaskCompletedOnDate } = useTaskStore();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -51,8 +53,8 @@ const TaskCard = ({
 
   // Create a unique draggable ID for this task instance
   // For repeating tasks or tasks shown on a different day than their due date,
-  // we create a unique ID by combining the task ID and the date
-  const draggableId = isRepeating ? `${id}:${date}` : id;
+  // we create a unique ID by combining the task ID and the date/timeframe
+  const actualDraggableId = draggableId || (isRepeating ? `${id}:${date}` : id);
 
   const handleOpenDialog = () => {
     setIsDialogOpen(true);
@@ -90,7 +92,7 @@ const TaskCard = ({
 
   return (
     <>
-      <Draggable draggableId={draggableId} index={index}>
+      <Draggable draggableId={actualDraggableId} index={index}>
         {(provided, snapshot) => (
           <TaskContextMenu
             id={id}
