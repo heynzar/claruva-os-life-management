@@ -63,7 +63,7 @@ const defaultPreferences: GoalPreferences = {
 };
 
 // Goal types
-type GoalType = "weekly" | "monthly" | "yearly" | "life";
+type GoalType = "weekly" | "monthly" | "yearly";
 
 export default function GoalsPage() {
   // Get tasks and actions from the Zustand store
@@ -177,10 +177,6 @@ export default function GoalsPage() {
           (currentYear + 3).toString(),
         ];
       }
-      case "life": {
-        // For life goals, just return a single key
-        return ["life"];
-      }
       default:
         return [];
     }
@@ -248,9 +244,6 @@ export default function GoalsPage() {
         break;
       case "yearly":
         currentTimeframeKey = getYear(now).toString();
-        break;
-      case "life":
-        currentTimeframeKey = "life";
         break;
     }
 
@@ -571,8 +564,6 @@ export default function GoalsPage() {
       }
       case "yearly":
         return timeframeKey;
-      case "life":
-        return "Life Goals";
       default:
         return timeframeKey;
     }
@@ -606,8 +597,6 @@ export default function GoalsPage() {
         return "Monthly Goals";
       case "yearly":
         return "Yearly Goals";
-      case "life":
-        return "Long-term Goals";
       default:
         return "";
     }
@@ -861,6 +850,7 @@ export default function GoalsPage() {
         <KeyboardShortcuts />
 
         <header className="flex bg-muted/20 items-center justify-between w-full p-2">
+          <Separator orientation="vertical" className="ml-10 mr-2" />
           <Tabs
             value={selectedGoalType}
             onValueChange={(value) => {
@@ -869,16 +859,21 @@ export default function GoalsPage() {
             }}
             className="w-full max-w-md"
           >
-            <TabsList>
-              <TabsTrigger value="weekly">Weekly</TabsTrigger>
-              <TabsTrigger value="monthly">Monthly</TabsTrigger>
-              <TabsTrigger value="yearly">Yearly</TabsTrigger>
-              <TabsTrigger value="life">Life</TabsTrigger>
+            <TabsList className="bg-transparent gap-1 p-0 h-8">
+              <TabsTrigger value="weekly" className="h-8">
+                Weekly
+              </TabsTrigger>
+              <TabsTrigger value="monthly" className="h-8">
+                Monthly
+              </TabsTrigger>
+              <TabsTrigger value="yearly" className="h-8">
+                Yearly
+              </TabsTrigger>
             </TabsList>
           </Tabs>
 
           <div className="flex items-center ml-auto">
-            {selectedGoalType !== "life" && (
+            {selectedGoalType && (
               <>
                 {!isCurrentPeriod() && (
                   <Button
