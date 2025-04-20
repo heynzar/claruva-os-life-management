@@ -71,11 +71,7 @@ export default function GoalContainer({
             {provided.placeholder}
 
             {/* Add goal button */}
-            <AddTaskButton
-              type={type}
-              defaultTimeFrameKey={timeFrameKey}
-              containerRef={containerRef}
-            />
+            <AddTaskButton type={type} defaultTimeFrameKey={timeFrameKey} />
           </ul>
         )}
       </Droppable>

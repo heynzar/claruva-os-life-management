@@ -45,7 +45,7 @@ const TaskCard = ({
   isRepeating,
   draggableId,
 }: TaskCardProps) => {
-  const { updateTask, toggleComplete, isTaskCompletedOnDate } = useTaskStore();
+  const { toggleComplete, isTaskCompletedOnDate } = useTaskStore();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   // Check if this task is completed for the current date

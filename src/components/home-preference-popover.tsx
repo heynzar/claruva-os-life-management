@@ -15,7 +15,6 @@ import { Label } from "@/components/ui/label";
 import { Info, Flag, RotateCcw } from "lucide-react";
 import TagsSelect from "@/components/task-dialog/tags-select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import PrioritySelect from "./task-dialog/priority-select";
 
 type Day = {
   id: string;

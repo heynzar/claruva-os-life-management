@@ -78,7 +78,7 @@ const DateSelect = ({
         default:
           return new Date();
       }
-    } catch (e) {
+    } catch {
       return new Date();
     }
   };
@@ -274,7 +274,7 @@ const DateSelect = ({
           const [year] = timeFrameKey.split("-");
           const parsedYear = Number.parseInt(year);
           return !isNaN(parsedYear) ? parsedYear : new Date().getFullYear();
-        } catch (e) {
+        } catch {
           return new Date().getFullYear();
         }
       }
@@ -305,7 +305,7 @@ const DateSelect = ({
           Number.parseInt(year) === viewYear &&
           Number.parseInt(month) === monthIndex + 1
         );
-      } catch (e) {
+      } catch {
         return false;
       }
     };

@@ -8,17 +8,11 @@ import AddTaskButton from "./add-task-button";
 
 interface DayContainerProps {
   date: string; // format: "YYYY-MM-DD"
-  tasks: any[];
   children?: React.ReactNode;
   droppableId: string; // Unique ID for the droppable area
 }
 
-const DayContainer = ({
-  date,
-  tasks,
-  children,
-  droppableId,
-}: DayContainerProps) => {
+const DayContainer = ({ date, children, droppableId }: DayContainerProps) => {
   const dateObj = new Date(date);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -69,7 +63,7 @@ const DayContainer = ({
             {provided.placeholder}
 
             {/* Add task button */}
-            <AddTaskButton date={date} containerRef={containerRef} />
+            <AddTaskButton date={date} />
           </ul>
         )}
       </Droppable>

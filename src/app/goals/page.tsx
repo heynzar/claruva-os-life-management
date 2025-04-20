@@ -72,7 +72,6 @@ export default function GoalsPage() {
     addTask,
     getTasksByType,
     updateTask,
-    reorderTasks,
     getGoalPositionForTimeFrame,
     setGoalPositionForTimeFrame,
   } = useTaskStore();
@@ -385,9 +384,6 @@ export default function GoalsPage() {
     // Get the task being dragged
     const task = tasks.find((t) => t.id === taskId);
     if (!task) return;
-
-    // Check if the task is repetitive
-    const isRepetitive = isGoalRepetitive(task);
 
     // If moving within the same container
     if (source.droppableId === destination.droppableId) {
@@ -932,30 +928,28 @@ export default function GoalsPage() {
 
         <main className="w-full h-full bg-muted/20 grid grid-cols-5 gap-1 p-1 pt-0 overflow-hidden">
           {/* Render goal containers based on the selected goal type */}
-          {getGoalsForTimeframeKeys().map(
-            ({ timeframeKey, goals, status }, index) => (
-              <div
-                key={`${selectedGoalType}-${timeframeKey}`}
-                className="w-full h-full"
+          {getGoalsForTimeframeKeys().map(({ timeframeKey, goals, status }) => (
+            <div
+              key={`${selectedGoalType}-${timeframeKey}`}
+              className="w-full h-full"
+            >
+              <GoalContainer
+                title={formatTimeframeTitle(selectedGoalType, timeframeKey)}
+                subtitle={formatTimeframeSubtitle(
+                  selectedGoalType,
+                  timeframeKey
+                )}
+                type={selectedGoalType}
+                timeFrameKey={timeframeKey}
+                droppableId={`${selectedGoalType}:${timeframeKey}`}
+                status={status}
               >
-                <GoalContainer
-                  title={formatTimeframeTitle(selectedGoalType, timeframeKey)}
-                  subtitle={formatTimeframeSubtitle(
-                    selectedGoalType,
-                    timeframeKey
-                  )}
-                  type={selectedGoalType}
-                  timeFrameKey={timeframeKey}
-                  droppableId={`${selectedGoalType}:${timeframeKey}`}
-                  status={status}
-                >
-                  {goals.map((goal, goalIndex) =>
-                    renderGoalCard(goal, goalIndex, timeframeKey)
-                  )}
-                </GoalContainer>
-              </div>
-            )
-          )}
+                {goals.map((goal, goalIndex) =>
+                  renderGoalCard(goal, goalIndex, timeframeKey)
+                )}
+              </GoalContainer>
+            </div>
+          ))}
         </main>
       </div>
     </DragDropContext>

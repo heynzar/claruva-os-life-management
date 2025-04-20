@@ -9,14 +9,12 @@ interface AddTaskButtonProps {
   type?: Task["type"];
   date?: string; // The date for daily tasks (YYYY-MM-DD)
   defaultTimeFrameKey?: string; // For goals
-  containerRef?: React.RefObject<HTMLElement | null>; // Reference to the container for detecting outside clicks
 }
 
 export default function AddTaskButton({
   type = "daily",
   date,
   defaultTimeFrameKey,
-  containerRef,
 }: AddTaskButtonProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [taskName, setTaskName] = useState("");

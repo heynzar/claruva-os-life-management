@@ -186,7 +186,7 @@ const TagsSelect = ({
                     className="w-full"
                   >
                     <Plus className="size-4" />
-                    Create "{inputValue}" tag
+                    Create &quot;{inputValue}&quot; tag
                   </Button>
                 ) : (
                   <span>No tags found.</span>
