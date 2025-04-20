@@ -609,33 +609,21 @@ export default function Home() {
   // Map board types to their components
   const boardComponents = {
     yesterday: (
-      <DayContainer
-        date={yesterdayDate}
-        tasks={filteredYesterdayTasks}
-        droppableId={yesterdayDate}
-      >
+      <DayContainer date={yesterdayDate} droppableId={yesterdayDate}>
         {filteredYesterdayTasks.map((task, index) =>
           renderTaskCard(task, yesterdayDate, index)
         )}
       </DayContainer>
     ),
     today: (
-      <DayContainer
-        date={currentDate}
-        tasks={filteredTodayTasks}
-        droppableId={currentDate}
-      >
+      <DayContainer date={currentDate} droppableId={currentDate}>
         {filteredTodayTasks.map((task, index) =>
           renderTaskCard(task, currentDate, index)
         )}
       </DayContainer>
     ),
     tomorrow: (
-      <DayContainer
-        date={tomorrowDate}
-        tasks={filteredTomorrowTasks}
-        droppableId={tomorrowDate}
-      >
+      <DayContainer date={tomorrowDate} droppableId={tomorrowDate}>
         {filteredTomorrowTasks.map((task, index) =>
           renderTaskCard(task, tomorrowDate, index)
         )}
