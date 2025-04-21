@@ -9,6 +9,11 @@ export interface VisionBoardItem {
   width: number;
   height: number;
   imageUrl: string;
+  caption?: string;
+  textBackground?: string;
+  textColor?: string;
+  fontSize?: number;
+  isText?: boolean;
 }
 
 interface VisionBoardStore {

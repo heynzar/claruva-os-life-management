@@ -29,6 +29,9 @@ type TextEditingDialogProps = {
 
   editTextBackground: string;
   setEditTextBackground: Dispatch<SetStateAction<string>>;
+
+  // Add optional onSave callback
+  onSave?: () => void;
 };
 
 const TextEditingDialog = ({
@@ -42,8 +45,10 @@ const TextEditingDialog = ({
   setEditTextContent,
   editTextBackground,
   setEditTextBackground,
+  onSave,
 }: TextEditingDialogProps) => {
   const { updateItem } = useVisionBoardStore();
+
   const handleSaveTextEdit = () => {
     if (!editingItemId) return;
 
@@ -54,8 +59,14 @@ const TextEditingDialog = ({
       fontSize: editFontSize,
     });
 
+    // Call the optional onSave callback if provided
+    if (onSave) {
+      onSave();
+    }
+
     setEditingItemId(null);
   };
+
   return (
     <Dialog
       open={Boolean(editingItemId)}

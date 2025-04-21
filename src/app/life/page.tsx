@@ -183,11 +183,6 @@ export default function LifePage() {
       return;
     }
 
-    // Extract the original task ID from the draggable ID
-    const taskId = draggableId.includes(":")
-      ? draggableId.split(":")[0]
-      : draggableId;
-
     // Get all goal IDs
     const goalIds = lifeGoals.map((goal) => goal.id);
 

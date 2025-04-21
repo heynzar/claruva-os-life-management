@@ -11,24 +11,6 @@ import { Trash2, Pen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import TextEditingDialog from "./text-editing-dialog";
 
-// Update the VisionBoardItem interface to include the new properties
-// This should match what's in your actual store file
-declare module "@/stores/useVisionBoardStore" {
-  interface VisionBoardItem {
-    id: string;
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-    imageUrl: string;
-    caption?: string;
-    textBackground?: string;
-    textColor?: string;
-    fontSize?: number;
-    isText?: boolean;
-  }
-}
-
 // Width provider enhances the Responsive Grid Layout with auto width detection
 const ResponsiveGridLayout = WidthProvider(Responsive);
 
@@ -114,7 +96,7 @@ export default function VisionBoard() {
             rowHeight={60}
             containerPadding={[10, 10]}
             margin={[10, 10]}
-            onLayoutChange={(layout: Layout[]) => handleLayoutChange(layout)}
+            onLayoutChange={handleLayoutChange}
             onDragStart={() => setIsLayoutChanging(true)}
             onDragStop={() => setIsLayoutChanging(false)}
             onResizeStart={() => setIsLayoutChanging(true)}
@@ -174,7 +156,7 @@ export default function VisionBoard() {
                         className="w-full h-full object-cover object-center"
                         onError={(e) => {
                           (e.target as HTMLImageElement).src =
-                            "/api/placeholder/400/300";
+                            "/images/broken-image.jpg";
                         }}
                       />
                     </div>
