@@ -7,7 +7,7 @@ import GoalContainer from "@/components/goal-container";
 import TaskCard from "@/components/task-card";
 import KeyboardShortcuts from "@/components/keyboard-shortcuts";
 import { useTaskStore, type Task } from "@/stores/useTaskStore";
-import VisionBoard from "@/components/vision-board";
+import VisionBoard from "@/components/vision-board/vision-board";
 import { Button } from "@/components/ui/button";
 import { useVisionBoardStore } from "@/stores/useVisionBoardStore";
 import AddContentDialog from "@/components/vision-board/add-content-dialog";
