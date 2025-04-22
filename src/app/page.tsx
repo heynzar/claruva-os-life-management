@@ -24,12 +24,13 @@ import DayContainer from "@/components/day-container";
 import GoalContainer from "@/components/goal-container";
 import TaskCard from "@/components/task-card";
 import KeyboardShortcuts from "@/components/keyboard-shortcuts";
-import HomePreferencePopover, {
+import {
   type HomePreferences,
-  defaultPreferences,
-} from "@/components/home-preference-popover";
+  defaultHomePreferences,
+} from "@/components/preference-popover";
 import { Button } from "@/components/ui/button";
 import { useTaskStore, type Task } from "@/stores/useTaskStore";
+import PreferencePopover from "@/components/preference-popover";
 
 // Initial tasks with proper typing
 const initialTasksData: Task[] = [
@@ -145,8 +146,9 @@ export default function Home() {
   );
 
   // User preferences state
-  const [preferences, setPreferences] =
-    useState<HomePreferences>(defaultPreferences);
+  const [preferences, setPreferences] = useState<HomePreferences>(
+    defaultHomePreferences
+  );
 
   // Load preferences from localStorage on initial render
   useEffect(() => {
@@ -155,7 +157,7 @@ export default function Home() {
       try {
         const parsedPreferences = JSON.parse(savedPreferences);
         setPreferences({
-          ...defaultPreferences,
+          ...defaultHomePreferences,
           ...parsedPreferences,
         });
       } catch (e) {
@@ -714,15 +716,18 @@ export default function Home() {
               <ChevronsRight />
             </Button>
 
-            <HomePreferencePopover
+            <PreferencePopover
+              type="home"
               preferences={preferences}
+              homePreferences={preferences}
               onPreferencesChange={handlePreferencesChange}
+              onHomePreferencesChange={handlePreferencesChange}
             >
               <Button size="icon" variant="ghost" className="ml-2">
                 <span className="sr-only">Settings</span>
                 <Settings2Icon />
               </Button>
-            </HomePreferencePopover>
+            </PreferencePopover>
           </div>
         </header>
         <main className="w-full h-full bg-muted/20 flex flex-col sm:grid md:grid-cols-3 lg:grid-cols-5 gap-1 p-1 pt-0 overflow-scroll">
