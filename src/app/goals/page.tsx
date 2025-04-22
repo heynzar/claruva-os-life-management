@@ -30,37 +30,12 @@ import TaskCard from "@/components/task-card";
 import KeyboardShortcuts from "@/components/keyboard-shortcuts";
 import { Button } from "@/components/ui/button";
 import { useTaskStore, type Task } from "@/stores/useTaskStore";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+
+import PreferencePopover, {
+  type GoalPreferences,
+  defaultGoalPreferences,
+} from "@/components/preference-popover";
 import { Separator } from "@/components/ui/separator";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Flag, RotateCcw } from "lucide-react";
-import TagsSelect from "@/components/task-dialog/tags-select";
-
-// Goal preferences type
-interface GoalPreferences {
-  showCompleted: boolean;
-  showHabits: boolean; // Added for repeated goals
-  selectedTags: string[];
-  selectedPriority: "high" | "medium" | "low" | null;
-  duplicateWhenDragging: boolean; // New preference for drag behavior
-  showRepeatedGoals: boolean; // New preference for showing repeated goals
-}
-
-// Default preferences
-const defaultPreferences: GoalPreferences = {
-  showCompleted: true,
-  showHabits: true,
-  selectedTags: [],
-  selectedPriority: null,
-  duplicateWhenDragging: false, // Default to false (move instead of duplicate)
-  showRepeatedGoals: true, // Default to true (show repeated goals)
-};
 
 // Goal types
 type GoalType = "weekly" | "monthly" | "yearly";
@@ -83,8 +58,9 @@ export default function GoalsPage() {
   const [referenceDate, setReferenceDate] = useState(new Date());
 
   // User preferences state
-  const [preferences, setPreferences] =
-    useState<GoalPreferences>(defaultPreferences);
+  const [preferences, setPreferences] = useState<GoalPreferences>(
+    defaultGoalPreferences
+  );
 
   // Load preferences from localStorage on initial render
   useEffect(() => {
@@ -93,7 +69,7 @@ export default function GoalsPage() {
       try {
         const parsedPreferences = JSON.parse(savedPreferences);
         setPreferences({
-          ...defaultPreferences,
+          ...defaultGoalPreferences,
           ...parsedPreferences,
         });
       } catch (e) {
@@ -625,224 +601,6 @@ export default function GoalsPage() {
     }
   };
 
-  // Goal Preference Popover Component
-  const GoalPreferencePopover = ({
-    children,
-  }: {
-    children: React.ReactNode;
-  }) => {
-    const [showCompleted, setShowCompleted] = useState(
-      preferences.showCompleted
-    );
-    const [showHabits, setShowHabits] = useState(preferences.showHabits);
-    const [selectedTags, setSelectedTags] = useState<string[]>(
-      preferences.selectedTags
-    );
-    const [selectedPriority, setSelectedPriority] = useState<
-      "high" | "medium" | "low" | null
-    >(preferences.selectedPriority);
-    const [duplicateWhenDragging, setDuplicateWhenDragging] = useState(
-      preferences.duplicateWhenDragging
-    );
-    const [showRepeatedGoals, setShowRepeatedGoals] = useState(
-      preferences.showRepeatedGoals
-    );
-    const [hasChanges, setHasChanges] = useState(false);
-    const [hasFilters, setHasFilters] = useState(false);
-
-    const priorities = [
-      { id: "high", label: "High", color: "text-red-500" },
-      { id: "medium", label: "Medium", color: "text-yellow-500" },
-      { id: "low", label: "Low", color: "text-blue-400" },
-    ];
-
-    // Track changes to enable/disable save button
-    useEffect(() => {
-      const hasChanged =
-        showCompleted !== preferences.showCompleted ||
-        showHabits !== preferences.showHabits ||
-        JSON.stringify(selectedTags) !==
-          JSON.stringify(preferences.selectedTags) ||
-        selectedPriority !== preferences.selectedPriority ||
-        duplicateWhenDragging !== preferences.duplicateWhenDragging ||
-        showRepeatedGoals !== preferences.showRepeatedGoals;
-
-      setHasChanges(hasChanged);
-    }, [
-      showCompleted,
-      showHabits,
-      selectedTags,
-      selectedPriority,
-      duplicateWhenDragging,
-      showRepeatedGoals,
-    ]);
-
-    // Check if any filters are applied
-    useEffect(() => {
-      setHasFilters(
-        !showCompleted ||
-          !showHabits ||
-          selectedTags.length > 0 ||
-          selectedPriority !== null
-      );
-    }, [showCompleted, showHabits, selectedTags, selectedPriority]);
-
-    const savePreferences = () => {
-      // Apply preferences
-      handlePreferencesChange({
-        showCompleted,
-        showHabits,
-        selectedTags,
-        selectedPriority,
-        duplicateWhenDragging,
-        showRepeatedGoals,
-      });
-
-      setHasChanges(false);
-    };
-
-    const resetAllFilters = () => {
-      setShowCompleted(true);
-      setShowHabits(true);
-      setSelectedTags([]);
-      setSelectedPriority(null);
-      setHasChanges(true);
-    };
-
-    return (
-      <Popover>
-        <PopoverTrigger asChild>{children}</PopoverTrigger>
-        <PopoverContent
-          className="w-80 p-2"
-          align="end"
-          aria-label="Goal Preferences Popover"
-        >
-          <div className="rounded-lg flex flex-col">
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="show-completed">Show completed goals</Label>
-                <Switch
-                  id="show-completed"
-                  checked={showCompleted}
-                  onCheckedChange={setShowCompleted}
-                  aria-label="Toggle completed goals"
-                />
-              </div>
-
-              <div className="flex items-center justify-between">
-                <Label htmlFor="show-habits">
-                  Show habits (repeated tasks)
-                </Label>
-                <Switch
-                  id="show-habits"
-                  checked={showHabits}
-                  onCheckedChange={setShowHabits}
-                  aria-label="Toggle habits"
-                />
-              </div>
-
-              <div className="flex items-center justify-between">
-                <Label htmlFor="show-repeated-goals">Show repeated goals</Label>
-                <Switch
-                  id="show-repeated-goals"
-                  checked={showRepeatedGoals}
-                  onCheckedChange={setShowRepeatedGoals}
-                  aria-label="Toggle repeated goals"
-                />
-              </div>
-
-              <div className="flex items-center justify-between">
-                <Label htmlFor="duplicate-when-dragging">
-                  Duplicate when dragging between types
-                </Label>
-                <Switch
-                  id="duplicate-when-dragging"
-                  checked={duplicateWhenDragging}
-                  onCheckedChange={setDuplicateWhenDragging}
-                  aria-label="Toggle duplicate when dragging"
-                />
-              </div>
-            </div>
-
-            <Separator className="my-4" />
-
-            <div className="space-y-2 mb-4">
-              <Label id="priority-label" className="block mb-2">
-                Filter by Priority
-              </Label>
-              <RadioGroup
-                value={selectedPriority || ""}
-                onValueChange={(value) =>
-                  setSelectedPriority(
-                    value ? (value as "high" | "medium" | "low") : null
-                  )
-                }
-                className="flex justify-between"
-              >
-                {priorities.map((priority) => (
-                  <div
-                    key={priority.id}
-                    className="flex items-center space-x-1"
-                  >
-                    <RadioGroupItem
-                      value={priority.id}
-                      id={`priority-${priority.id}`}
-                      className="sr-only"
-                    />
-                    <Label
-                      htmlFor={`priority-${priority.id}`}
-                      className={`flex items-center gap-1 px-2 py-1 rounded-md cursor-pointer ${
-                        selectedPriority === priority.id
-                          ? "bg-primary/10 text-primary font-medium"
-                          : "hover:bg-muted"
-                      }`}
-                    >
-                      <Flag className={`h-3 w-3 ${priority.color}`} />
-                      <span className="text-xs">{priority.label}</span>
-                    </Label>
-                  </div>
-                ))}
-              </RadioGroup>
-            </div>
-
-            <div className="space-y-2 mb-4">
-              <Label id="tags-label" className="block mb-2">
-                Filter by Tags
-              </Label>
-              <TagsSelect
-                selectedTags={selectedTags}
-                setSelectedTags={setSelectedTags}
-              />
-            </div>
-
-            <div className="mt-4 flex justify-between">
-              {hasFilters && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-8 flex items-center gap-1"
-                  onClick={resetAllFilters}
-                >
-                  <RotateCcw className="size-3" />
-                  Reset Filters
-                </Button>
-              )}
-              <Button
-                disabled={!hasChanges}
-                variant="default"
-                size="sm"
-                className="h-8 ml-auto"
-                onClick={savePreferences}
-              >
-                Save Changes
-              </Button>
-            </div>
-          </div>
-        </PopoverContent>
-      </Popover>
-    );
-  };
-
   return (
     <DragDropContext onDragEnd={handleDragEnd}>
       <div className="w-full h-screen flex flex-col">
@@ -912,12 +670,16 @@ export default function GoalsPage() {
               </>
             )}
 
-            <GoalPreferencePopover>
+            <PreferencePopover
+              type="goal"
+              preferences={preferences}
+              onPreferencesChange={handlePreferencesChange}
+            >
               <Button size="icon" variant="ghost" className="ml-2">
                 <span className="sr-only">Settings</span>
                 <Settings2Icon />
               </Button>
-            </GoalPreferencePopover>
+            </PreferencePopover>
           </div>
         </header>
 
