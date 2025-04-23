@@ -10,12 +10,12 @@ const geistSans = Geist({
 });
 
 export const metadata: Metadata = {
-  title: "Claruva OS - Life Management",
+  title: "JornadOS - Life Management",
   description:
     "A comprehensive life management system to organize and enhance your daily life.",
   authors: [{ name: "nzar.dev" }],
   keywords: [
-    "Claruva OS",
+    "JornadOS",
     "life management",
     "productivity app",
     "task management",
@@ -30,27 +30,27 @@ export const metadata: Metadata = {
   ],
   metadataBase: new URL("https://claruva.com"),
   openGraph: {
-    title: "Claruva OS - Life Management",
+    title: "JornadOS - Life Management",
     description:
-      "Claruva OS is your ultimate tool for managing tasks, tracking goals, and building habits to achieve a balanced and productive life.",
-    url: "https://claruva.com",
-    siteName: "Claruva OS",
+      "JornadOS is your ultimate tool for managing tasks, tracking goals, and building habits to achieve a balanced and productive life.",
+    url: "https://jornadOS.com",
+    siteName: "JornadOS",
     images: [
       {
-        url: "/claruva-cover.png",
+        url: "/jornados-cover.png",
       },
     ],
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Claruva OS - Life Management",
+    title: "JornadOS - Life Management",
     description:
-      "Claruva OS is your ultimate tool for managing tasks, tracking goals, and building habits to achieve a balanced and productive life.",
-    images: ["/claruva-cover.png"],
+      "JornadOS is your ultimate tool for managing tasks, tracking goals, and building habits to achieve a balanced and productive life.",
+    images: ["/jornados-cover.png"],
   },
   alternates: {
-    canonical: "https://claruva.com",
+    canonical: "https://jornadOS.com",
   },
 };
 
@@ -66,7 +66,7 @@ export default function RootLayout({
       </head>
       <body
         suppressHydrationWarning
-        className={`${geistSans.variable} font-sanss antialiased`}
+        className={`${geistSans.variable} font-sans antialiased`}
       >
         <ThemeProvider
           attribute="class"
