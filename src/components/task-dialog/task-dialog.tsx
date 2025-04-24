@@ -291,7 +291,7 @@ export default function TaskDialog({
   return (
     <>
       <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-        <DialogContent className="sm:max-w-[500px] lg:max-w-[540px] p-2 gap-0">
+        <DialogContent className="sm:max-w-[500px] lg:max-w-[540px] p-2 gap-0 top-40 sm:top-72">
           <DialogTitle className="sr-only">{dialogTitle}</DialogTitle>
           <DialogDescription className="sr-only">
             {dialog_type === "add"

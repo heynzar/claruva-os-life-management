@@ -725,7 +725,7 @@ export default function Home() {
             </HomePreferencePopover>
           </div>
         </header>
-        <main className="w-full h-full bg-muted/20 grid grid-cols-5 gap-1 p-1 pt-0 overflow-hidden">
+        <main className="w-full h-full bg-muted/20 flex flex-col sm:grid md:grid-cols-3 lg:grid-cols-5 gap-1 p-1 pt-0 overflow-scroll">
           {/* Render boards based on user preferences */}
           {preferences.selectedDays.map((boardId) => (
             <div key={boardId} className="w-full h-full">

@@ -29,7 +29,7 @@ const Sidebar = () => {
     { href: "/", label: "Home", icon: Home },
     { href: "/goals", label: "Goals", icon: Target },
     { href: "/life", label: "Life", icon: Crown },
-    { href: "/pomodoros", label: "Focus", icon: Leaf },
+    { href: "/focus", label: "Focus", icon: Leaf },
     { href: "/journey", label: "Journey", icon: Map },
   ];
 
