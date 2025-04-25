@@ -1,4 +1,6 @@
-import { Dispatch, SetStateAction, useState } from "react";
+"use client";
+
+import { type Dispatch, type SetStateAction, useState } from "react";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -10,8 +12,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { AudioLines, Volume2, X } from "lucide-react";
-import sounds from "@/data/sounds";
-import { quranList, reciterList } from "@/data/quran";
 import { Separator } from "@/components/ui/separator";
 import {
   Popover,
@@ -19,38 +19,24 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 
-type PreferenceType = "none" | "timer" | "sound";
-
-interface TimerSettings {
-  pomodoro: number;
-  shortBreak: number;
-  longBreak: number;
-  soundEnabled: boolean;
-  volume: number;
-  activeSounds: string[];
-  playDuringBreaks: boolean;
-  quranReciter: string | null;
-  quranSurah: string | null;
-  quranVolume: number;
-  playNextSurah: boolean; // Add this new setting
-}
+import sounds from "@/data/sounds";
+import { quranList, reciterList } from "@/data/quran";
+import {
+  usePomodoroStore,
+  type PomodoroSettings,
+} from "@/stores/usePomodoroStore";
+import type { PreferenceType } from "./page";
 
 interface SoundPreferencesProps {
-  settings: TimerSettings;
-  updateSettings: (settings: Partial<TimerSettings>) => void;
-  shouldPlaySounds: boolean;
-  shouldPlayQuran: boolean;
-  timerState: "pomodoro" | "shortBreak" | "longBreak";
-  timerStatus: "idle" | "running" | "paused" | "completed";
+  settings: PomodoroSettings;
   setPreferenceType: Dispatch<SetStateAction<PreferenceType>>;
 }
 
-// Update the SoundPreferences component to include the new playNextSurah toggle
 export function SoundPreferences({
   settings,
-  updateSettings,
   setPreferenceType,
 }: SoundPreferencesProps) {
+  const { updateSettings } = usePomodoroStore();
   const [volume, setVolume] = useState(settings.volume);
   const [quranVolume, setQuranVolume] = useState(settings.quranVolume);
   const [reciterSearch, setReciterSearch] = useState("");
@@ -108,12 +94,10 @@ export function SoundPreferences({
     updateSettings({ playDuringBreaks: !settings.playDuringBreaks });
   };
 
-  // Add a toggle for enabling/disabling all sounds
   const toggleSoundEnabled = () => {
     updateSettings({ soundEnabled: !settings.soundEnabled });
   };
 
-  // Add a toggle for playing next surah
   const togglePlayNextSurah = () => {
     updateSettings({ playNextSurah: !settings.playNextSurah });
   };
@@ -167,7 +151,6 @@ export function SoundPreferences({
                   max={100}
                   step={1}
                   onValueChange={handleQuranVolumeChange}
-                  // className=" [&>span:first-child]:bg-[#333333] [&>span:first-child]:h-2 [&>span:first-child_span]:bg-primary [&_[role=slider]]:bg-white [&_[role=slider]]:border-none [&_[role=slider]]:h-4 [&_[role=slider]]:w-4"
                 />
               </PopoverContent>
             </Popover>
