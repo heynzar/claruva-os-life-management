@@ -1,30 +1,25 @@
 "use client";
 
-import { Dispatch, SetStateAction, useState } from "react";
+import { type Dispatch, type SetStateAction, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Timer, X } from "lucide-react";
-
-type PreferenceType = "none" | "timer" | "sound";
-
-interface TimerSettings {
-  pomodoro: number;
-  shortBreak: number;
-  longBreak: number;
-  soundEnabled: boolean;
-}
+import {
+  usePomodoroStore,
+  type PomodoroSettings,
+} from "@/stores/usePomodoroStore";
+import type { PreferenceType } from "./page";
 
 interface TimerPreferencesProps {
-  settings: TimerSettings;
-  updateSettings: (settings: Partial<TimerSettings>) => void;
+  settings: PomodoroSettings;
   setPreferenceType: Dispatch<SetStateAction<PreferenceType>>;
 }
 
 export function TimerPreferences({
   settings,
-  updateSettings,
   setPreferenceType,
 }: TimerPreferencesProps) {
+  const { updateSettings } = usePomodoroStore();
   const [pomodoroInput, setPomodoroInput] = useState(
     settings.pomodoro.toString()
   );
