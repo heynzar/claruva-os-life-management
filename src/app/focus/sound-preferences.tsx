@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -11,6 +12,7 @@ import {
 import { Volume2 } from "lucide-react";
 import sounds from "@/data/sounds";
 import { quranList, reciterList } from "@/data/quran";
+import { Separator } from "@/components/ui/separator";
 import {
   Popover,
   PopoverContent,
@@ -97,6 +99,20 @@ export function SoundPreferences({
       quranSurah: value,
       soundEnabled: true,
     });
+  };
+
+  const togglePlayDuringBreaks = () => {
+    updateSettings({ playDuringBreaks: !settings.playDuringBreaks });
+  };
+
+  // Add a toggle for enabling/disabling all sounds
+  const toggleSoundEnabled = () => {
+    updateSettings({ soundEnabled: !settings.soundEnabled });
+  };
+
+  // Add a toggle for playing next surah
+  const togglePlayNextSurah = () => {
+    updateSettings({ playNextSurah: !settings.playNextSurah });
   };
 
   // Filter reciters based on search input
@@ -225,6 +241,37 @@ export function SoundPreferences({
               </Button>
             );
           })}
+        </div>
+      </div>
+
+      {/* Settings Section */}
+      <div className="space-y-1.5">
+        <Separator className="mb-4" />
+        <div className="flex items-center justify-between">
+          <span>Play next surah automatically</span>
+          <Switch
+            checked={settings.playNextSurah}
+            onCheckedChange={togglePlayNextSurah}
+            className="data-[state=checked]:bg-primary"
+          />
+        </div>
+
+        <div className="flex items-center justify-between">
+          <span>Play sounds during breaks</span>
+          <Switch
+            checked={settings.playDuringBreaks}
+            onCheckedChange={togglePlayDuringBreaks}
+            className="data-[state=checked]:bg-primary"
+          />
+        </div>
+
+        <div className="flex items-center justify-between">
+          <span>Enable sounds during sessions</span>
+          <Switch
+            checked={settings.soundEnabled}
+            onCheckedChange={toggleSoundEnabled}
+            className="data-[state=checked]:bg-primary"
+          />
         </div>
       </div>
     </div>
