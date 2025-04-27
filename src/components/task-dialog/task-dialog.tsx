@@ -1,5 +1,4 @@
 "use client";
-
 import type React from "react";
 
 import { useState, useEffect, useRef } from "react";
@@ -379,7 +378,7 @@ export default function TaskDialog({
                 Cancel
               </Button>
               <Button
-                className="text-white border"
+                className="border"
                 onClick={handleSave}
                 disabled={newName.trim() === ""}
               >

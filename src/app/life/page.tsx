@@ -172,7 +172,7 @@ export default function LifePage() {
 
   // Handle drag end event
   const handleDragEnd = (result: DropResult): void => {
-    const { destination, source, draggableId } = result;
+    const { destination, source } = result;
 
     // If there's no destination or the item was dropped back in its original position
     if (

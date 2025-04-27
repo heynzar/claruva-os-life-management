@@ -95,7 +95,7 @@ export function TimerPreferences({
             <Button
               key={option}
               variant={settings.pomodoro === option ? "default" : "secondary"}
-              className="text-white rounded-xs text-xl"
+              className="rounded-xs text-xl"
               onClick={() => selectPomodoroOption(option)}
             >
               {option}
@@ -124,7 +124,7 @@ export function TimerPreferences({
             <Button
               key={option}
               variant={settings.shortBreak === option ? "default" : "secondary"}
-              className="text-white rounded-xs text-xl"
+              className="rounded-xs text-xl"
               onClick={() => selectShortBreakOption(option)}
             >
               {option}
@@ -153,7 +153,7 @@ export function TimerPreferences({
             <Button
               key={option}
               variant={settings.longBreak === option ? "default" : "secondary"}
-              className="text-white rounded-xs text-xl"
+              className="rounded-xs text-xl"
               onClick={() => selectLongBreakOption(option)}
             >
               {option}

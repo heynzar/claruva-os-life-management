@@ -4,98 +4,90 @@ import { format } from "date-fns";
 import DayContainer from "@/components/day-container";
 import TaskCard from "@/components/task-card";
 import { useTaskStore } from "@/stores/useTaskStore";
-import { PomodoroTimer } from "./PomodoroTimer";
+import { PomodoroTimer } from "./pomodoro";
 import KeyboardShortcuts from "@/components/keyboard-shortcuts";
 import { DragDropContext, type DropResult } from "@hello-pangea/dnd";
 import { Button } from "@/components/ui/button";
-import { AudioLines, Timer } from "lucide-react";
+import { AudioLines, Settings2, Timer } from "lucide-react";
 import { useState } from "react";
 
 export default function FocusPage() {
-  const [showPreferences, setShowPreferences] = useState(false);
-  const [showSoundPreferences, setShowSoundPreferences] = useState(false);
+  const [preferenceType, setPreferenceType] = useState<
+    "none" | "general" | "sound"
+  >("none");
 
-  // Get today's tasks
   const today = format(new Date(), "yyyy-MM-dd");
-  const { getTasksForDate, getTaskPositionForDate, isTaskCompletedOnDate } =
-    useTaskStore();
+  const { getTasksForDate, getTaskPositionForDate } = useTaskStore();
   const todayTasks = getTasksForDate(today);
 
-  // Handle drag end event
   const handleDragEnd = (result: DropResult) => {
-    // We're not implementing drag functionality for this page
-    // but we need to provide the handler for DragDropContext
-    return;
+    // Drag functionality not implemented
   };
 
-  // Render task card
-  const renderTaskCard = (task: any, index: number) => {
-    const isRepeating =
-      Boolean(task.repeatedDays?.length) || task.dueDate !== today;
-
-    return (
-      <TaskCard
-        key={isRepeating ? `${task.id}-${today}` : task.id}
-        id={task.id}
-        name={task.name}
-        description={task.description}
-        type={task.type}
-        tags={task.tags || []}
-        priority={task.priority}
-        timeFrameKey={task.timeFrameKey}
-        repeatedDays={task.repeatedDays || []}
-        dueDate={task.dueDate}
-        date={today}
-        pomodoros={task.pomodoros || 0}
-        position={getTaskPositionForDate(task.id, today)}
-        index={index}
-        isRepeating={isRepeating}
-      />
-    );
+  const togglePreference = (type: "general" | "sound") => {
+    setPreferenceType((prev) => (prev === type ? "none" : type));
   };
 
   return (
     <DragDropContext onDragEnd={handleDragEnd}>
       <div className="w-full h-screen flex flex-col">
-        {/* Keyboard shortcuts component */}
         <KeyboardShortcuts />
 
         <header className="flex bg-muted/20 items-center justify-between w-full p-2">
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center">
             <Button
-              size="icon"
+              size="sm"
               variant="ghost"
-              onClick={() => {
-                setShowSoundPreferences(!showSoundPreferences);
-              }}
+              onClick={() => togglePreference("sound")}
             >
+              sounds
               <AudioLines />
             </Button>
             <Button
-              size="icon"
+              size="sm"
               variant="ghost"
-              onClick={() => {
-                setShowPreferences(!showPreferences);
-              }}
+              onClick={() => togglePreference("general")}
             >
+              Timer
               <Timer />
+            </Button>
+            <Button size="icon" variant="ghost">
+              <Settings2 />
             </Button>
           </div>
         </header>
 
         <main className="w-full h-full bg-muted/20 grid grid-cols-[340px_1fr] gap-1 p-1 pt-0 overflow-hidden">
-          {/* Today Container */}
           <div className="h-full overflow-auto scroll-smooth">
             <DayContainer date={today} droppableId={today}>
-              {todayTasks.map((task, index) => renderTaskCard(task, index))}
+              {todayTasks.map((task, index) => (
+                <TaskCard
+                  key={`${task.id}-${today}`}
+                  id={task.id}
+                  name={task.name}
+                  description={task.description}
+                  type={task.type}
+                  tags={task.tags || []}
+                  priority={task.priority}
+                  timeFrameKey={task.timeFrameKey}
+                  repeatedDays={task.repeatedDays || []}
+                  dueDate={task.dueDate}
+                  date={today}
+                  pomodoros={task.pomodoros || 0}
+                  position={getTaskPositionForDate(task.id, today)}
+                  index={index}
+                  isRepeating={
+                    Boolean(task.repeatedDays?.length) || task.dueDate !== today
+                  }
+                />
+              ))}
             </DayContainer>
           </div>
 
-          {/* Focus App */}
           <div className="h-full bg-muted/40">
             <PomodoroTimer
-              showPreferences={showPreferences}
-              showSoundPreferences={showSoundPreferences}
+              showPreferences={preferenceType === "general"}
+              showSoundPreferences={preferenceType === "sound"}
             />
           </div>
         </main>

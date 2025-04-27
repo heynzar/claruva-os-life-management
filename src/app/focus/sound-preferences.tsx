@@ -234,7 +234,7 @@ export function SoundPreferences({
               <Button
                 key={sound.name}
                 variant={isActive ? "default" : "secondary"}
-                className="text-white rounded-xs text-xl"
+                className="rounded-xs text-xl"
                 onClick={() => toggleSound(sound.name)}
               >
                 <sound.Icon size={24} />
