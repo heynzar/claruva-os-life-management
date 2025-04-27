@@ -62,7 +62,7 @@ export default function FocusPage() {
 
   return (
     <DragDropContext onDragEnd={handleDragEnd}>
-      <div className="w-full h-screen flex flex-col">
+      <div className="w-full min-h-screen sm:h-screen sm:max-h-screen flex flex-col">
         <KeyboardShortcuts />
 
         <header className="flex bg-muted/20 items-center justify-between w-full p-2">
@@ -86,15 +86,15 @@ export default function FocusPage() {
               <Timer className="size-4" />
             </Button>
             <Separator orientation="vertical" className="mx-2" />
-            <Button size="icon" variant="ghost" aria-label="Settings">
+            <Button disabled size="icon" variant="ghost" aria-label="Settings">
               <Settings2 className="size-4" />
             </Button>
           </div>
         </header>
 
-        <main className="w-full h-full bg-muted/20 grid grid-cols-[340px_1fr] gap-1 p-1 pt-0 overflow-hidden">
+        <main className="w-full h-full bg-background flex flex-col-reverse lg:grid lg:grid-cols-[350px_1fr] gap-1 p-1 pt-0 overflow-auto">
           {/* Today's tasks container with drag and drop */}
-          <div className="h-full overflow-auto scroll-smooth">
+          <div className="h-full overflow-visible sm:overflow-auto">
             <DayContainer date={today} droppableId={today}>
               {todayTasks.map((task, index) => {
                 // Determine if this is a repeating task

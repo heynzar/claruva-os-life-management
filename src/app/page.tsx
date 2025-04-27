@@ -683,7 +683,7 @@ export default function Home() {
 
   return (
     <DragDropContext onDragEnd={handleDragEnd}>
-      <div className="w-full h-screen flex flex-col items-end">
+      <div className="w-full h-screen min-h-screen flex flex-col">
         {/* Keyboard shortcuts component */}
         <KeyboardShortcuts />
 
@@ -730,7 +730,7 @@ export default function Home() {
             </PreferencePopover>
           </div>
         </header>
-        <main className="w-full h-full bg-muted/20 flex flex-col sm:grid md:grid-cols-3 lg:grid-cols-5 gap-1 p-1 pt-0 overflow-scroll">
+        <main className="w-full h-full bg-background flex flex-col sm:grid md:grid-cols-3 lg:grid-cols-5 gap-1 p-1 pt-0 overflow-auto">
           {/* Render boards based on user preferences */}
           {preferences.selectedDays.map((boardId) => (
             <div key={boardId} className="w-full h-full">

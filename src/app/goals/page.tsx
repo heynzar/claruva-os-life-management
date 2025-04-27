@@ -603,12 +603,15 @@ export default function GoalsPage() {
 
   return (
     <DragDropContext onDragEnd={handleDragEnd}>
-      <div className="w-full h-screen flex flex-col">
+      <div className="w-full h-screen min-h-screen flex flex-col">
         {/* Keyboard shortcuts component */}
         <KeyboardShortcuts />
 
-        <header className="flex bg-muted/20 items-center justify-between w-full p-2">
-          <Separator orientation="vertical" className="ml-10 mr-2" />
+        <header className="flex flex-col-reverse gap-2 sm:flex-row bg-muted/20 items-center sm:justify-between w-full p-2">
+          <Separator
+            orientation="vertical"
+            className="ml-10 mr-2 hidden sm:block"
+          />
           <Tabs
             value={selectedGoalType}
             onValueChange={(value) => {
@@ -617,7 +620,7 @@ export default function GoalsPage() {
             }}
             className="w-full max-w-md"
           >
-            <TabsList className="bg-transparent gap-1 p-0 h-8">
+            <TabsList className="bg-muted/40 sm:bg-transparent gap-1 sm:p-0 sm:h-8 w-full sm:w-min">
               <TabsTrigger value="weekly" className="h-8">
                 Weekly
               </TabsTrigger>
@@ -683,7 +686,7 @@ export default function GoalsPage() {
           </div>
         </header>
 
-        <main className="w-full h-full bg-muted/20 grid grid-cols-5 gap-1 p-1 pt-0 overflow-hidden">
+        <main className="w-full h-full bg-background flex flex-col sm:grid md:grid-cols-3 lg:grid-cols-5 gap-1 p-1 pt-0 overflow-auto">
           {/* Render goal containers based on the selected goal type */}
           {getGoalsForTimeframeKeys().map(({ timeframeKey, goals, status }) => (
             <div

@@ -244,7 +244,7 @@ export default function LifePage() {
 
   return (
     <DragDropContext onDragEnd={handleDragEnd}>
-      <div className="w-full h-screen overflow-auto flex flex-col">
+      <div className="w-full min-h-screen h-screen flex flex-col">
         {/* Keyboard shortcuts component */}
         <KeyboardShortcuts />
 
@@ -267,7 +267,7 @@ export default function LifePage() {
           </div>
         </header>
 
-        <main className="w-full h-full bg-muted/20 flex flex-col lg:grid lg:grid-cols-[350px_1fr] gap-1 p-1">
+        <main className="w-full h-full bg-background flex flex-col lg:grid lg:grid-cols-[350px_1fr] gap-1 p-1 pt-0 overflow-auto">
           {/* Life Goals Container */}
           <div className="h-full">
             <GoalContainer

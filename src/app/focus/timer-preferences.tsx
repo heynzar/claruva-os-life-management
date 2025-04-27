@@ -79,7 +79,7 @@ export function TimerPreferences({
   };
 
   return (
-    <div className="w-1/2 max-w-[340px] h-full border-l-4 border-background">
+    <div className="w-full h-full border-b-4 sm:border-b-0 sm:border-l-4 border-background">
       <div className="p-5 border-b flex justify-between items-center">
         <h2 className="text-lg flex gap-2 items-center">
           <Timer className="size-4" />

@@ -543,20 +543,15 @@ export function PomodoroTimer({
   };
 
   return (
-    <div className="flex w-full h-full justify-center items-center">
-      <div
-        className={cn(
-          "flex flex-1 flex-col items-center justify-center p-8 transition-all duration-300",
-          preferenceType ? "w-1/2" : "w-full"
-        )}
-      >
+    <div className="flex flex-col-reverse sm:flex-row w-full h-full sm:overflow-clip justify-center items-center">
+      <div className="flex flex-1 flex-col h-full items-center justify-center p-8 transition-all duration-300">
         <div className="mb-4">
           <Select
             value={selectedTaskId || ""}
             onValueChange={setSelectedTaskId}
             disabled={timerStatus === "running" || timerState !== "pomodoro"}
           >
-            <SelectTrigger className="max-w-xs hover:!bg-secondary text-muted-foreground !bg-transparent border-none !h-8 cursor-pointer">
+            <SelectTrigger className="max-w-xs hover:!bg-secondary text-muted-foreground !bg-transparent border-none !h-8 cursor-pointer shadow-none">
               <SelectValue placeholder="Select a task to focus on" />
             </SelectTrigger>
             <SelectContent align="center" className="w-xs max-h-[300px]">
@@ -614,7 +609,6 @@ export function PomodoroTimer({
         </div>
 
         {/* Rest of the timer UI */}
-
         <div className="flex gap-2">
           <Button className="px-8" size="sm" onClick={toggleTimer}>
             {getButtonLabel()}
@@ -650,25 +644,31 @@ export function PomodoroTimer({
         </Dialog>
       </div>
 
-      {preferenceType === "timer" && (
-        <TimerPreferences
-          settings={settings}
-          updateSettings={updateSettings}
-          setPreferenceType={setPreferenceType}
-        />
-      )}
+      <div
+        className={`${
+          preferenceType !== "none" && "w-full max-w-[350px]"
+        } h-full `}
+      >
+        {preferenceType === "timer" && (
+          <TimerPreferences
+            settings={settings}
+            updateSettings={updateSettings}
+            setPreferenceType={setPreferenceType}
+          />
+        )}
 
-      {preferenceType === "sound" && (
-        <SoundPreferences
-          settings={settings}
-          updateSettings={updateSettings}
-          shouldPlaySounds={shouldPlayAmbientSounds()}
-          shouldPlayQuran={shouldPlayQuran()}
-          timerState={timerState}
-          timerStatus={timerStatus}
-          setPreferenceType={setPreferenceType}
-        />
-      )}
+        {preferenceType === "sound" && (
+          <SoundPreferences
+            settings={settings}
+            updateSettings={updateSettings}
+            shouldPlaySounds={shouldPlayAmbientSounds()}
+            shouldPlayQuran={shouldPlayQuran()}
+            timerState={timerState}
+            timerStatus={timerStatus}
+            setPreferenceType={setPreferenceType}
+          />
+        )}
+      </div>
     </div>
   );
 }
