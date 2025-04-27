@@ -7,6 +7,23 @@ import { SoundPreferences } from "./sound-preferences";
 import { cn } from "@/lib/utils";
 import { quranList, reciterList } from "@/data/quran";
 import sounds from "@/data/sounds";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useTaskStore } from "@/stores/useTaskStore";
+import { format } from "date-fns";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 type TimerState = "pomodoro" | "shortBreak" | "longBreak";
 type TimerStatus = "running" | "paused" | "idle" | "completed";
@@ -36,7 +53,10 @@ export function PomodoroTimer({
   const [timerStatus, setTimerStatus] = useState<TimerStatus>("idle");
   const [timeLeft, setTimeLeft] = useState(0);
   const [pomodoroCount, setPomodoroCount] = useState(0);
-  // Update the initial settings state to include default sound preferences
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const [startTime, setStartTime] = useState<number | null>(null);
+  const [accumulatedTime, setAccumulatedTime] = useState<number>(0);
+  const [showSkipDialog, setShowSkipDialog] = useState(false);
   const [settings, setSettings] = useState<TimerSettings>({
     pomodoro: 25,
     shortBreak: 5,
@@ -99,7 +119,6 @@ export function PomodoroTimer({
     // No action needed, just prevent timer reset
   }, [settings]);
 
-  // Timer countdown logic
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null;
 
@@ -109,6 +128,18 @@ export function PomodoroTimer({
           if (prevTime <= 1) {
             playNotificationSound();
             clearInterval(interval!);
+
+            // When timer completes, calculate final time
+            if (
+              startTime !== null &&
+              selectedTaskId &&
+              timerState === "pomodoro"
+            ) {
+              const sessionTime = (Date.now() - startTime) / 1000; // in seconds
+              const totalTimeSpent = (accumulatedTime + sessionTime) / 60; // convert to minutes
+              updatePomodoro(selectedTaskId, Math.round(totalTimeSpent));
+            }
+
             setTimerStatus("completed");
             return 0;
           }
@@ -298,16 +329,74 @@ export function PomodoroTimer({
 
   const toggleTimer = () => {
     if (timerStatus === "running") {
+      // When pausing, calculate and store the time spent in this session
       setTimerStatus("paused");
+      if (startTime !== null) {
+        const sessionTime = (Date.now() - startTime) / 1000; // in seconds
+        setAccumulatedTime((prev) => prev + sessionTime);
+
+        // Update task with the actual minutes spent when paused
+        if (selectedTaskId && timerState === "pomodoro") {
+          const minutesSpent = sessionTime / 60;
+          updatePomodoro(selectedTaskId, Math.round(minutesSpent));
+        }
+      }
     } else if (timerStatus === "completed") {
       moveToNextState();
     } else {
-      // If we're starting from idle, store the current total time
       if (timerStatus === "idle") {
-        totalTimeRef.current = timeLeft;
+        totalTimeRef.current = timeLeft; // Store the starting time
+        // Reset accumulated time when starting a new timer
+        setAccumulatedTime(0);
       }
+      // Record the start time when the timer starts/resumes
+      setStartTime(Date.now());
       setTimerStatus("running");
     }
+  };
+
+  const handleSkip = () => {
+    // Only show dialog if we're in a pomodoro session and have a selected task
+    if (timerState === "pomodoro" && selectedTaskId) {
+      setShowSkipDialog(true);
+    } else {
+      // For breaks, just move to next state without asking
+      moveToNextState();
+    }
+  };
+
+  const skipWithTime = () => {
+    if (selectedTaskId && timerState === "pomodoro") {
+      // Calculate how much time was spent in this session
+      let timeSpent = 0;
+      if (startTime !== null) {
+        const sessionTime = (Date.now() - startTime) / 1000; // in seconds
+        timeSpent = sessionTime + accumulatedTime; // total seconds spent
+      } else {
+        timeSpent = accumulatedTime; // just the accumulated time from previous runs
+      }
+
+      const minutesSpent = timeSpent / 60;
+      updatePomodoro(selectedTaskId, Math.round(minutesSpent));
+    }
+
+    setShowSkipDialog(false);
+    moveToNextState();
+  };
+
+  const skipWithoutTime = () => {
+    setShowSkipDialog(false);
+    moveToNextState();
+  };
+
+  const skipWithFullPomodoroTime = () => {
+    if (selectedTaskId && timerState === "pomodoro") {
+      // Add the full pomodoro time (in minutes)
+      updatePomodoro(selectedTaskId, Math.round(timeLeft / 60));
+    }
+
+    setShowSkipDialog(false);
+    moveToNextState();
   };
 
   const moveToNextState = () => {
@@ -315,6 +404,8 @@ export function PomodoroTimer({
       // Increment pomodoro count
       const newCount = pomodoroCount + 1;
       setPomodoroCount(newCount);
+
+      // Don't update task here - we already did it in the timer completion handler
 
       // After 4 pomodoros, take a long break
       if (newCount % 4 === 0) {
@@ -326,6 +417,10 @@ export function PomodoroTimer({
       // After any break, go back to pomodoro
       setTimerState("pomodoro");
     }
+
+    // Reset accumulated time when moving to a new state
+    setAccumulatedTime(0);
+    setStartTime(null);
 
     // Reset timer status to idle so it doesn't auto-start
     setTimerStatus("idle");
@@ -443,8 +538,27 @@ export function PomodoroTimer({
     return false;
   };
 
+  const today = format(new Date(), "yyyy-MM-dd");
+  const { tasks, getTasksForDate, updateTask } = useTaskStore();
+  const todayTasks = getTasksForDate(today);
+
   const progress = calculateProgress();
   const circumference = 2 * Math.PI * 120;
+
+  console.log(selectedTaskId);
+
+  const updatePomodoro = (taskId: string, pomodorosToAdd: number) => {
+    if (!taskId || pomodorosToAdd <= 0) return;
+
+    const task = tasks.find((t) => t.id === taskId);
+    if (!task) return;
+
+    const currentPomodoros = task.pomodoros ?? 0;
+
+    updateTask(taskId, {
+      pomodoros: currentPomodoros + pomodorosToAdd,
+    });
+  };
 
   return (
     <div className="flex w-full h-full justify-center items-center">
@@ -454,6 +568,32 @@ export function PomodoroTimer({
           showPreferences || showSoundPreferences ? "w-1/2" : "w-full"
         )}
       >
+        <div className="mb-4">
+          <Select
+            value={selectedTaskId || ""}
+            onValueChange={setSelectedTaskId}
+            disabled={timerStatus === "running" || timerState !== "pomodoro"}
+          >
+            <SelectTrigger className="max-w-xs hover:!bg-secondary text-muted-foreground !bg-transparent border-none !h-8 cursor-pointer">
+              <SelectValue placeholder="Select a task to focus on" />
+            </SelectTrigger>
+            <SelectContent align="center" className="w-xs max-h-[300px]">
+              {todayTasks.map((task) => {
+                const truncatedName =
+                  task.name.length > 40
+                    ? `${task.name.slice(0, 40)}...`
+                    : task.name;
+
+                return (
+                  <SelectItem key={task.id} value={task.id}>
+                    {truncatedName} - {task.pomodoros}
+                  </SelectItem>
+                );
+              })}
+            </SelectContent>
+          </Select>
+        </div>
+
         <div className="relative mb-8 scale-105">
           <svg width="280" height="280" viewBox="0 0 280 280">
             <circle
@@ -461,7 +601,7 @@ export function PomodoroTimer({
               cy="140"
               r="120"
               fill="none"
-              className="stroke-muted-foreground/40"
+              className="stroke-muted-foreground/20"
               strokeWidth="8"
             />
             <circle
@@ -491,21 +631,44 @@ export function PomodoroTimer({
           </div>
         </div>
 
+        {/* Rest of the timer UI */}
+
         <div className="flex gap-2">
-          <Button className="px-8 text-white" size="sm" onClick={toggleTimer}>
+          <Button className="px-8" size="sm" onClick={toggleTimer}>
             {getButtonLabel()}
           </Button>
 
           {timerStatus === "paused" && (
-            <Button variant="outline" size="sm" onClick={moveToNextState}>
+            <Button variant="outline" size="sm" onClick={handleSkip}>
               Skip
             </Button>
           )}
         </div>
+
+        {/* Skip dialog */}
+        <Dialog open={showSkipDialog} onOpenChange={setShowSkipDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Skip Pomodoro Session</DialogTitle>
+              <DialogDescription>
+                Do you want to count the time you've already spent on this task?
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="mt-4">
+              <Button variant="secondary" size="sm" onClick={skipWithoutTime}>
+                Skip Without Counting
+              </Button>
+
+              <Button size="sm" onClick={skipWithFullPomodoroTime}>
+                Count Full Pomodoro
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {showPreferences && (
-        <div className="w-1/2 max-w-sm h-full border-l-4 border-background p-5 overflow-auto">
+        <div className="w-1/2 max-w-[340px] h-full border-l-4 border-background p-5 overflow-auto">
           <TimerPreferences
             settings={settings}
             updateSettings={updateSettings}
@@ -514,7 +677,7 @@ export function PomodoroTimer({
       )}
 
       {showSoundPreferences && (
-        <div className="w-1/2 max-w-sm h-full border-l-4 border-background p-5 overflow-auto">
+        <div className="w-1/2 max-w-[340px] h-full border-l-4 border-background p-5 overflow-auto">
           <SoundPreferences
             settings={settings}
             updateSettings={updateSettings}
