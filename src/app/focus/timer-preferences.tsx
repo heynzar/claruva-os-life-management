@@ -1,8 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { Dispatch, SetStateAction, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Timer, X } from "lucide-react";
+
+type PreferenceType = "none" | "timer" | "sound";
 
 interface TimerSettings {
   pomodoro: number;
@@ -14,11 +17,13 @@ interface TimerSettings {
 interface TimerPreferencesProps {
   settings: TimerSettings;
   updateSettings: (settings: Partial<TimerSettings>) => void;
+  setPreferenceType: Dispatch<SetStateAction<PreferenceType>>;
 }
 
 export function TimerPreferences({
   settings,
   updateSettings,
+  setPreferenceType,
 }: TimerPreferencesProps) {
   const [pomodoroInput, setPomodoroInput] = useState(
     settings.pomodoro.toString()
@@ -74,91 +79,112 @@ export function TimerPreferences({
   };
 
   return (
-    <div className="flex justify-center h-full flex-col gap-8">
-      <div className="space-y-1">
-        <h3 className="text-lg">Set Pomodoro Time</h3>
-        <div className="relative flex items-center gap-2">
-          <Input
-            type="number"
-            value={pomodoroInput}
-            onChange={(e) => handlePomodoroChange(e.target.value)}
-            className="bg-card border-none rounded-xs"
-            min="1"
-          />
-          <span className="absolute right-0 m-1 rounded-xs text-muted-foreground px-2 py-0.5 bg-card">
-            minutes
-          </span>
-        </div>
-
-        <div className="grid grid-cols-4 gap-1">
-          {pomodoroOptions.map((option) => (
-            <Button
-              key={option}
-              variant={settings.pomodoro === option ? "default" : "secondary"}
-              className="rounded-xs text-xl"
-              onClick={() => selectPomodoroOption(option)}
-            >
-              {option}
-            </Button>
-          ))}
-        </div>
+    <div className="w-1/2 max-w-[340px] h-full border-l-4 border-background">
+      <div className="p-5 border-b flex justify-between items-center">
+        <h2 className="text-lg flex gap-2 items-center">
+          <Timer className="size-4" />
+          Timer Settings
+        </h2>
+        <Button
+          variant="ghost"
+          className="size-7"
+          size="icon"
+          onClick={() => setPreferenceType("none")}
+        >
+          <X />
+        </Button>
       </div>
 
-      <div className="space-y-1">
-        <h3 className="text-lg">Set Short Break</h3>
-        <div className="relative flex items-center gap-2">
-          <Input
-            type="number"
-            value={shortBreakInput}
-            onChange={(e) => handleShortBreakChange(e.target.value)}
-            className="bg-card border-none rounded-xs"
-            min="1"
-          />
-          <span className="absolute right-0 m-1 rounded-xs text-muted-foreground px-2 py-0.5 bg-card">
-            minutes
-          </span>
+      <div className="flex flex-col gap-8 h-full p-5">
+        <div className="space-y-1">
+          <h3 className="text-lg">Focus Duration</h3>
+          <div className="relative flex items-center gap-2">
+            <Input
+              type="number"
+              value={pomodoroInput}
+              onChange={(e) => handlePomodoroChange(e.target.value)}
+              className="bg-card border-none rounded-xs"
+              min="1"
+            />
+            <span className="absolute right-0 m-1 rounded-xs text-muted-foreground px-2 py-0.5 bg-card">
+              minutes
+            </span>
+          </div>
+
+          <div className="grid grid-cols-4 gap-1">
+            {pomodoroOptions.map((option) => (
+              <Button
+                key={option}
+                variant={settings.pomodoro === option ? "default" : "secondary"}
+                className="rounded-xs text-xl"
+                onClick={() => selectPomodoroOption(option)}
+              >
+                {option}
+              </Button>
+            ))}
+          </div>
         </div>
 
-        <div className="grid grid-cols-4 gap-1">
-          {shortBreakOptions.map((option) => (
-            <Button
-              key={option}
-              variant={settings.shortBreak === option ? "default" : "secondary"}
-              className="rounded-xs text-xl"
-              onClick={() => selectShortBreakOption(option)}
-            >
-              {option}
-            </Button>
-          ))}
-        </div>
-      </div>
+        <div className="space-y-1">
+          <h3 className="text-lg">Short Break Duration</h3>
+          <div className="relative flex items-center gap-2">
+            <Input
+              type="number"
+              value={shortBreakInput}
+              onChange={(e) => handleShortBreakChange(e.target.value)}
+              className="bg-card border-none rounded-xs"
+              min="1"
+            />
+            <span className="absolute right-0 m-1 rounded-xs text-muted-foreground px-2 py-0.5 bg-card">
+              minutes
+            </span>
+          </div>
 
-      <div className="space-y-1">
-        <h3 className="text-lg">Set Long Break</h3>
-        <div className="relative flex items-center gap-2">
-          <Input
-            type="number"
-            value={longBreakInput}
-            onChange={(e) => handleLongBreakChange(e.target.value)}
-            className="bg-card border-none rounded-xs"
-            min="1"
-          />
-          <span className="absolute right-0 m-1 rounded-xs text-muted-foreground px-2 py-0.5 bg-card">
-            minutes
-          </span>
+          <div className="grid grid-cols-4 gap-1">
+            {shortBreakOptions.map((option) => (
+              <Button
+                key={option}
+                variant={
+                  settings.shortBreak === option ? "default" : "secondary"
+                }
+                className="rounded-xs text-xl"
+                onClick={() => selectShortBreakOption(option)}
+              >
+                {option}
+              </Button>
+            ))}
+          </div>
         </div>
 
-        <div className="grid grid-cols-4 gap-1">
-          {longBreakOptions.map((option) => (
-            <Button
-              key={option}
-              variant={settings.longBreak === option ? "default" : "secondary"}
-              className="rounded-xs text-xl"
-              onClick={() => selectLongBreakOption(option)}
-            >
-              {option}
-            </Button>
-          ))}
+        <div className="space-y-1">
+          <h3 className="text-lg">Long Break Duration</h3>
+          <div className="relative flex items-center gap-2">
+            <Input
+              type="number"
+              value={longBreakInput}
+              onChange={(e) => handleLongBreakChange(e.target.value)}
+              className="bg-card border-none rounded-xs"
+              min="1"
+            />
+            <span className="absolute right-0 m-1 rounded-xs text-muted-foreground px-2 py-0.5 bg-card">
+              minutes
+            </span>
+          </div>
+
+          <div className="grid grid-cols-4 gap-1">
+            {longBreakOptions.map((option) => (
+              <Button
+                key={option}
+                variant={
+                  settings.longBreak === option ? "default" : "secondary"
+                }
+                className="rounded-xs text-xl"
+                onClick={() => selectLongBreakOption(option)}
+              >
+                {option}
+              </Button>
+            ))}
+          </div>
         </div>
       </div>
     </div>

@@ -11,8 +11,9 @@ import TaskCard from "@/components/task-card";
 import KeyboardShortcuts from "@/components/keyboard-shortcuts";
 import { useTaskStore } from "@/stores/useTaskStore";
 import { PomodoroTimer } from "./pomodoro";
+import { Separator } from "@/components/ui/separator";
 
-type PreferenceType = "none" | "general" | "sound";
+type PreferenceType = "none" | "timer" | "sound";
 
 export default function FocusPage() {
   const [preferenceType, setPreferenceType] = useState<PreferenceType>("none");
@@ -23,13 +24,13 @@ export default function FocusPage() {
 
   const todayTasks = getTasksForDate(today);
 
-  const togglePreference = (type: "general" | "sound") => {
+  const togglePreference = (type: "timer" | "sound") => {
     setPreferenceType((prev) => (prev === type ? "none" : type));
   };
 
   // Handle drag end for task reordering
   const handleDragEnd = (result: DropResult) => {
-    const { destination, source, draggableId } = result;
+    const { destination, source } = result;
 
     // If there's no destination or the item was dropped back in its original position
     if (
@@ -39,11 +40,6 @@ export default function FocusPage() {
     ) {
       return;
     }
-
-    // Extract the original task ID from the draggable ID (handle repeating tasks)
-    const taskId = draggableId.includes(":")
-      ? draggableId.split(":")[0]
-      : draggableId;
 
     // Get all task IDs for today
     const taskIds = todayTasks.map((task) => {
@@ -77,18 +73,19 @@ export default function FocusPage() {
               onClick={() => togglePreference("sound")}
               aria-label="Sound preferences"
             >
-              <span className="hidden sm:inline">Sounds</span>
+              <span className="hidden sm:inline">Audio</span>
               <AudioLines className="size-4" />
             </Button>
             <Button
               size="sm"
               variant="ghost"
-              onClick={() => togglePreference("general")}
+              onClick={() => togglePreference("timer")}
               aria-label="Timer preferences"
             >
               <span className="hidden sm:inline">Timer</span>
               <Timer className="size-4" />
             </Button>
+            <Separator orientation="vertical" className="mx-2" />
             <Button size="icon" variant="ghost" aria-label="Settings">
               <Settings2 className="size-4" />
             </Button>
@@ -136,8 +133,8 @@ export default function FocusPage() {
           {/* Pomodoro timer container */}
           <div className="h-full bg-muted/40">
             <PomodoroTimer
-              showPreferences={preferenceType === "general"}
-              showSoundPreferences={preferenceType === "sound"}
+              preferenceType={preferenceType}
+              setPreferenceType={setPreferenceType}
             />
           </div>
         </main>

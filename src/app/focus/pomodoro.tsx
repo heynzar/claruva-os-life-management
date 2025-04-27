@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, Dispatch, SetStateAction } from "react";
 import { Button } from "@/components/ui/button";
 import { TimerPreferences } from "./timer-preferences";
 import { SoundPreferences } from "./sound-preferences";
@@ -25,6 +25,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
+type PreferenceType = "none" | "timer" | "sound";
 type TimerState = "pomodoro" | "shortBreak" | "longBreak";
 type TimerStatus = "running" | "paused" | "idle" | "completed";
 
@@ -43,11 +44,11 @@ interface TimerSettings {
 }
 
 export function PomodoroTimer({
-  showPreferences,
-  showSoundPreferences,
+  setPreferenceType,
+  preferenceType,
 }: {
-  showSoundPreferences: boolean;
-  showPreferences: boolean;
+  preferenceType: PreferenceType;
+  setPreferenceType: Dispatch<SetStateAction<PreferenceType>>;
 }) {
   const [timerState, setTimerState] = useState<TimerState>("pomodoro");
   const [timerStatus, setTimerStatus] = useState<TimerStatus>("idle");
@@ -546,7 +547,7 @@ export function PomodoroTimer({
       <div
         className={cn(
           "flex flex-1 flex-col items-center justify-center p-8 transition-all duration-300",
-          showPreferences || showSoundPreferences ? "w-1/2" : "w-full"
+          preferenceType ? "w-1/2" : "w-full"
         )}
       >
         <div className="mb-4">
@@ -649,26 +650,24 @@ export function PomodoroTimer({
         </Dialog>
       </div>
 
-      {showPreferences && (
-        <div className="w-1/2 max-w-[340px] h-full border-l-4 border-background p-5 overflow-auto">
-          <TimerPreferences
-            settings={settings}
-            updateSettings={updateSettings}
-          />
-        </div>
+      {preferenceType === "timer" && (
+        <TimerPreferences
+          settings={settings}
+          updateSettings={updateSettings}
+          setPreferenceType={setPreferenceType}
+        />
       )}
 
-      {showSoundPreferences && (
-        <div className="w-1/2 max-w-[340px] h-full border-l-4 border-background p-5 overflow-auto">
-          <SoundPreferences
-            settings={settings}
-            updateSettings={updateSettings}
-            shouldPlaySounds={shouldPlayAmbientSounds()}
-            shouldPlayQuran={shouldPlayQuran()}
-            timerState={timerState}
-            timerStatus={timerStatus}
-          />
-        </div>
+      {preferenceType === "sound" && (
+        <SoundPreferences
+          settings={settings}
+          updateSettings={updateSettings}
+          shouldPlaySounds={shouldPlayAmbientSounds()}
+          shouldPlayQuran={shouldPlayQuran()}
+          timerState={timerState}
+          timerStatus={timerStatus}
+          setPreferenceType={setPreferenceType}
+        />
       )}
     </div>
   );

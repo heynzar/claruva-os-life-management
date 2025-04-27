@@ -32,7 +32,7 @@ import { Button } from "@/components/ui/button";
 import { useTaskStore, type Task } from "@/stores/useTaskStore";
 
 import PreferencePopover, {
-  type GoalPreferences,
+  type BasePreferences,
   defaultGoalPreferences,
 } from "@/components/preference-popover";
 import { Separator } from "@/components/ui/separator";
@@ -58,7 +58,7 @@ export default function GoalsPage() {
   const [referenceDate, setReferenceDate] = useState(new Date());
 
   // User preferences state
-  const [preferences, setPreferences] = useState<GoalPreferences>(
+  const [preferences, setPreferences] = useState<BasePreferences>(
     defaultGoalPreferences
   );
 
@@ -79,7 +79,7 @@ export default function GoalsPage() {
   }, []);
 
   // Handle preferences change
-  const handlePreferencesChange = (newPreferences: GoalPreferences) => {
+  const handlePreferencesChange = (newPreferences: BasePreferences) => {
     setPreferences(newPreferences);
     localStorage.setItem("goalPreferences", JSON.stringify(newPreferences));
   };
