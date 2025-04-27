@@ -35,11 +35,6 @@ export interface HomePreferences extends BasePreferences {
   selectedDays: string[];
 }
 
-// Goal-specific preferences
-export interface GoalPreferences extends BasePreferences {
-  // Any goal-specific preferences can be added here
-}
-
 // Default base preferences
 export const defaultBasePreferences: BasePreferences = {
   showCompleted: true,
@@ -56,7 +51,7 @@ export const defaultHomePreferences: HomePreferences = {
 };
 
 // Default goal preferences
-export const defaultGoalPreferences: GoalPreferences = {
+export const defaultGoalPreferences: BasePreferences = {
   ...defaultBasePreferences,
 };
 

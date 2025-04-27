@@ -365,25 +365,6 @@ export function PomodoroTimer({
     }
   };
 
-  const skipWithTime = () => {
-    if (selectedTaskId && timerState === "pomodoro") {
-      // Calculate how much time was spent in this session
-      let timeSpent = 0;
-      if (startTime !== null) {
-        const sessionTime = (Date.now() - startTime) / 1000; // in seconds
-        timeSpent = sessionTime + accumulatedTime; // total seconds spent
-      } else {
-        timeSpent = accumulatedTime; // just the accumulated time from previous runs
-      }
-
-      const minutesSpent = timeSpent / 60;
-      updatePomodoro(selectedTaskId, Math.round(minutesSpent));
-    }
-
-    setShowSkipDialog(false);
-    moveToNextState();
-  };
-
   const skipWithoutTime = () => {
     setShowSkipDialog(false);
     moveToNextState();
@@ -651,7 +632,8 @@ export function PomodoroTimer({
             <DialogHeader>
               <DialogTitle>Skip Pomodoro Session</DialogTitle>
               <DialogDescription>
-                Do you want to count the time you've already spent on this task?
+                Do you want to count the time you&apos;ve already spent on this
+                task?
               </DialogDescription>
             </DialogHeader>
             <DialogFooter className="mt-4">

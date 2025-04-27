@@ -1,31 +1,67 @@
 "use client";
 
+import { useState } from "react";
 import { format } from "date-fns";
+import { DragDropContext, type DropResult } from "@hello-pangea/dnd";
+import { AudioLines, Settings2, Timer } from "lucide-react";
+import { Button } from "@/components/ui/button";
+
 import DayContainer from "@/components/day-container";
 import TaskCard from "@/components/task-card";
+import KeyboardShortcuts from "@/components/keyboard-shortcuts";
 import { useTaskStore } from "@/stores/useTaskStore";
 import { PomodoroTimer } from "./pomodoro";
-import KeyboardShortcuts from "@/components/keyboard-shortcuts";
-import { DragDropContext, type DropResult } from "@hello-pangea/dnd";
-import { Button } from "@/components/ui/button";
-import { AudioLines, Settings2, Timer } from "lucide-react";
-import { useState } from "react";
+
+type PreferenceType = "none" | "general" | "sound";
 
 export default function FocusPage() {
-  const [preferenceType, setPreferenceType] = useState<
-    "none" | "general" | "sound"
-  >("none");
-
+  const [preferenceType, setPreferenceType] = useState<PreferenceType>("none");
   const today = format(new Date(), "yyyy-MM-dd");
-  const { getTasksForDate, getTaskPositionForDate } = useTaskStore();
-  const todayTasks = getTasksForDate(today);
 
-  const handleDragEnd = (result: DropResult) => {
-    // Drag functionality not implemented
-  };
+  const { getTasksForDate, getTaskPositionForDate, reorderTasks } =
+    useTaskStore();
+
+  const todayTasks = getTasksForDate(today);
 
   const togglePreference = (type: "general" | "sound") => {
     setPreferenceType((prev) => (prev === type ? "none" : type));
+  };
+
+  // Handle drag end for task reordering
+  const handleDragEnd = (result: DropResult) => {
+    const { destination, source, draggableId } = result;
+
+    // If there's no destination or the item was dropped back in its original position
+    if (
+      !destination ||
+      (destination.droppableId === source.droppableId &&
+        destination.index === source.index)
+    ) {
+      return;
+    }
+
+    // Extract the original task ID from the draggable ID (handle repeating tasks)
+    const taskId = draggableId.includes(":")
+      ? draggableId.split(":")[0]
+      : draggableId;
+
+    // Get all task IDs for today
+    const taskIds = todayTasks.map((task) => {
+      const isRepeating = task.repeatedDays?.length || task.dueDate !== today;
+      return isRepeating ? `${task.id}:${today}` : task.id;
+    });
+
+    // Reorder the task IDs
+    const [removed] = taskIds.splice(source.index, 1);
+    taskIds.splice(destination.index, 0, removed);
+
+    // Convert back to original task IDs for reordering
+    const reorderedTaskIds = taskIds.map((id) =>
+      id.includes(":") ? id.split(":")[0] : id
+    );
+
+    // Update the task positions
+    reorderTasks(today, reorderedTaskIds);
   };
 
   return (
@@ -39,51 +75,65 @@ export default function FocusPage() {
               size="sm"
               variant="ghost"
               onClick={() => togglePreference("sound")}
+              aria-label="Sound preferences"
             >
-              sounds
-              <AudioLines />
+              <span className="hidden sm:inline">Sounds</span>
+              <AudioLines className="size-4" />
             </Button>
             <Button
               size="sm"
               variant="ghost"
               onClick={() => togglePreference("general")}
+              aria-label="Timer preferences"
             >
-              Timer
-              <Timer />
+              <span className="hidden sm:inline">Timer</span>
+              <Timer className="size-4" />
             </Button>
-            <Button size="icon" variant="ghost">
-              <Settings2 />
+            <Button size="icon" variant="ghost" aria-label="Settings">
+              <Settings2 className="size-4" />
             </Button>
           </div>
         </header>
 
         <main className="w-full h-full bg-muted/20 grid grid-cols-[340px_1fr] gap-1 p-1 pt-0 overflow-hidden">
+          {/* Today's tasks container with drag and drop */}
           <div className="h-full overflow-auto scroll-smooth">
             <DayContainer date={today} droppableId={today}>
-              {todayTasks.map((task, index) => (
-                <TaskCard
-                  key={`${task.id}-${today}`}
-                  id={task.id}
-                  name={task.name}
-                  description={task.description}
-                  type={task.type}
-                  tags={task.tags || []}
-                  priority={task.priority}
-                  timeFrameKey={task.timeFrameKey}
-                  repeatedDays={task.repeatedDays || []}
-                  dueDate={task.dueDate}
-                  date={today}
-                  pomodoros={task.pomodoros || 0}
-                  position={getTaskPositionForDate(task.id, today)}
-                  index={index}
-                  isRepeating={
-                    Boolean(task.repeatedDays?.length) || task.dueDate !== today
-                  }
-                />
-              ))}
+              {todayTasks.map((task, index) => {
+                // Determine if this is a repeating task
+                const isRepeating =
+                  Boolean(task.repeatedDays?.length) || task.dueDate !== today;
+
+                // Create a unique draggable ID for repeating tasks
+                const draggableId = isRepeating
+                  ? `${task.id}:${today}`
+                  : task.id;
+
+                return (
+                  <TaskCard
+                    key={isRepeating ? `${task.id}-${today}` : task.id}
+                    id={task.id}
+                    name={task.name}
+                    description={task.description}
+                    type={task.type}
+                    tags={task.tags || []}
+                    priority={task.priority}
+                    timeFrameKey={task.timeFrameKey}
+                    repeatedDays={task.repeatedDays || []}
+                    dueDate={task.dueDate}
+                    date={today}
+                    pomodoros={task.pomodoros || 0}
+                    position={getTaskPositionForDate(task.id, today)}
+                    index={index}
+                    isRepeating={isRepeating}
+                    draggableId={draggableId}
+                  />
+                );
+              })}
             </DayContainer>
           </div>
 
+          {/* Pomodoro timer container */}
           <div className="h-full bg-muted/40">
             <PomodoroTimer
               showPreferences={preferenceType === "general"}
