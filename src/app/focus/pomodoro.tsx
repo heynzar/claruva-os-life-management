@@ -4,7 +4,6 @@ import { useEffect, useState, useRef, Dispatch, SetStateAction } from "react";
 import { Button } from "@/components/ui/button";
 import { TimerPreferences } from "./timer-preferences";
 import { SoundPreferences } from "./sound-preferences";
-import { cn } from "@/lib/utils";
 import { quranList, reciterList } from "@/data/quran";
 import sounds from "@/data/sounds";
 import {
@@ -646,7 +645,7 @@ export function PomodoroTimer({
 
       <div
         className={`${
-          preferenceType !== "none" && "w-full max-w-[350px]"
+          preferenceType !== "none" && "w-full sm:max-w-[350px]"
         } h-full `}
       >
         {preferenceType === "timer" && (
