@@ -31,11 +31,19 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTaskStore } from "@/stores/useTaskStore";
 import { useTagsStore } from "@/stores/useTagsStore";
 import { cn } from "@/lib/utils";
-
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import {
   Popover,
   PopoverContent,
@@ -491,6 +499,76 @@ export default function JourneyPage() {
     ];
   }, [totalPomodoros, pomodoroSettings]);
 
+  // Calculate achievements
+  const achievements = useMemo(() => {
+    return [
+      {
+        id: "streak-7",
+        title: "7-Day Streak",
+        description: "Complete tasks for 7 consecutive days",
+        icon: Flame,
+        achieved: calculateLongestStreak >= 7,
+        progress: Math.min(calculateLongestStreak / 7, 1) * 100,
+      },
+      {
+        id: "streak-30",
+        title: "30-Day Streak",
+        description: "Complete tasks for 30 consecutive days",
+        icon: Flame,
+        achieved: calculateLongestStreak >= 30,
+        progress: Math.min(calculateLongestStreak / 30, 1) * 100,
+      },
+      {
+        id: "streak-100",
+        title: "100-Day Streak",
+        description: "Complete tasks for 100 consecutive days",
+        icon: Flame,
+        achieved: calculateLongestStreak >= 100,
+        progress: Math.min(calculateLongestStreak / 100, 1) * 100,
+      },
+      {
+        id: "goals-10",
+        title: "10 Goals Completed",
+        description: "Complete 10 goals",
+        icon: Target,
+        achieved: goalStats.completed >= 10,
+        progress: Math.min(goalStats.completed / 10, 1) * 100,
+      },
+      {
+        id: "goals-50",
+        title: "50 Goals Completed",
+        description: "Complete 50 goals",
+        icon: Target,
+        achieved: goalStats.completed >= 50,
+        progress: Math.min(goalStats.completed / 50, 1) * 100,
+      },
+      {
+        id: "goals-100",
+        title: "100 Goals Completed",
+        description: "Complete 100 goals",
+        icon: Target,
+        achieved: goalStats.completed >= 100,
+        progress: Math.min(goalStats.completed / 100, 1) * 100,
+      },
+      {
+        id: "pomodoros-100",
+        title: "100 Pomodoros",
+        description: "Complete 100 pomodoro sessions",
+        icon: Clock,
+        achieved: totalPomodoros >= 100,
+        progress: Math.min(totalPomodoros / 100, 1) * 100,
+      },
+      {
+        id: "pomodoros-500",
+        title: "500 Pomodoros",
+        description: "Complete 500 pomodoro sessions",
+        icon: Clock,
+        achieved: totalPomodoros >= 500,
+        progress: Math.min(totalPomodoros / 500, 1) * 100,
+      },
+    ];
+  }, [calculateLongestStreak, goalStats.completed, totalPomodoros]);
+
   console.log(pomodoroChartData);
   // Navigate to previous/next year
   const previousYear = () => {
@@ -500,6 +578,8 @@ export default function JourneyPage() {
   const nextYear = () => {
     setSelectedYear((prev) => prev + 1);
   };
+
+  console.log(tagAnalytics);
 
   const dataaa = [
     {
@@ -852,6 +932,61 @@ export default function JourneyPage() {
 
           <HabitsTable />
         </div>
+
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Trophy className="h-4 w-4 text-muted-foreground" />
+              <CardTitle>Your Achievements</CardTitle>
+            </div>
+            <CardDescription>Milestones and accomplishments</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {achievements.map((achievement) => (
+                <Card
+                  key={achievement.id}
+                  className={cn(
+                    "overflow-hidden transition-all",
+                    achievement.achieved ? "border-primary" : "opacity-70"
+                  )}
+                >
+                  <CardHeader className="p-4 pb-2">
+                    <div className="flex items-center gap-2">
+                      <div
+                        className={cn(
+                          "p-1.5 rounded-full",
+                          achievement.achieved ? "bg-primary/20" : "bg-muted"
+                        )}
+                      >
+                        <achievement.icon
+                          className={cn(
+                            "h-4 w-4",
+                            achievement.achieved
+                              ? "text-primary"
+                              : "text-muted-foreground"
+                          )}
+                        />
+                      </div>
+                      <CardTitle className="text-sm">
+                        {achievement.title}
+                      </CardTitle>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="p-4 pt-0">
+                    <CardDescription className="text-xs mb-2">
+                      {achievement.description}
+                    </CardDescription>
+                    <Progress value={achievement.progress} className="h-1" />
+                    <div className="text-xs text-right mt-1 text-muted-foreground">
+                      {achievement.progress.toFixed(0)}%
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       </main>
     </div>
   );
