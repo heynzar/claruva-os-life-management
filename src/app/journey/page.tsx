@@ -74,6 +74,7 @@ import { PriorityDonutChart } from "./priority-donut-chart";
 import { ProductivityByDayChart } from "./productivity-by-day-chart";
 import { PomodoroInsightsChart } from "./pomodoro-insights-chart";
 import HabitsTable from "./habits-table";
+import ActivityHeatmap from "./heatmap";
 
 // Helper function to get pomodoro settings from localStorage
 const getPomodoroSettings = () => {
@@ -569,18 +570,6 @@ export default function JourneyPage() {
     ];
   }, [calculateLongestStreak, goalStats.completed, totalPomodoros]);
 
-  console.log(pomodoroChartData);
-  // Navigate to previous/next year
-  const previousYear = () => {
-    setSelectedYear((prev) => prev - 1);
-  };
-
-  const nextYear = () => {
-    setSelectedYear((prev) => prev + 1);
-  };
-
-  console.log(tagAnalytics);
-
   const dataaa = [
     {
       subject: "spiritual ✨",
@@ -700,160 +689,11 @@ export default function JourneyPage() {
           </Card>
         </div>
 
-        <section className="flex gap-2 w-full">
-          {/* Heatmap Section */}
-          <div className="relative overflow-x-auto border p-4 rounded">
-            {/* Fixed width container to prevent wrapping */}
-            <div className="w-full min-w-[750px]">
-              {/* Month labels */}
-              <div className="flex mb-2">
-                {/* Day labels column */}
-                <div className="w-8 flex-shrink-0"></div>
-
-                {/* Month labels */}
-                {[
-                  "Jan",
-                  "Feb",
-                  "Mar",
-                  "Apr",
-                  "May",
-                  "Jun",
-                  "Jul",
-                  "Aug",
-                  "Sep",
-                  "Oct",
-                  "Nov",
-                  "Dec",
-                ].map((month) => (
-                  <div
-                    key={month}
-                    className="flex-1 text-center text-xs text-muted-foreground"
-                  >
-                    {month}
-                  </div>
-                ))}
-              </div>
-
-              {/* Calendar grid */}
-              <div className="flex">
-                {/* Day labels column */}
-                <div className="w-8 flex-shrink-0 mr-1">
-                  <div className="flex flex-col justify-between h-28">
-                    {["Mon", "", "Wed", "", "Fri", "", "Sun"].map((day, i) => (
-                      <div
-                        key={i}
-                        className="text-xs text-muted-foreground h-3"
-                      >
-                        {day}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Calendar cells container */}
-                <div className="flex-1">
-                  <div className="grid grid-rows-7 grid-flow-col gap-1">
-                    {/* Calendar cells */}
-                    {daysInYear.map((day, i) => {
-                      // Only show if day of week matches the row (0 = Monday, 6 = Sunday)
-                      const dayOfWeek = (day.getDay() + 6) % 7; // Convert to 0-6 where 0 is Monday
-
-                      // Calculate the completion stats for this day
-                      const completionStats = getCompletionRate(day);
-
-                      // Determine the background color based on completion rate
-                      let bgColorClass = "bg-muted";
-                      if (completionStats.rate > 0) {
-                        if (completionStats.rate >= 80) {
-                          bgColorClass = "bg-primary/80 dark:bg-primary/90";
-                        } else if (completionStats.rate >= 50) {
-                          bgColorClass = "bg-primary/50 dark:bg-primary/60";
-                        } else if (completionStats.rate >= 25) {
-                          bgColorClass = "bg-primary/30 dark:bg-primary/40";
-                        } else {
-                          bgColorClass = "bg-primary/10 dark:bg-primary/20";
-                        }
-                      }
-
-                      return (
-                        <Popover key={i}>
-                          <PopoverTrigger asChild>
-                            <div
-                              className={cn(
-                                "size-[0.92rem] rounded cursor-pointer",
-                                bgColorClass,
-                                isSameDay(day, new Date()) &&
-                                  "ring-1 ring-primary"
-                              )}
-                              style={{ gridRow: dayOfWeek + 1 }}
-                            />
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-2" align="center">
-                            <div className="text-sm font-medium">
-                              {format(day, "EEEE, MMMM d")}
-                            </div>
-                            <div className="text-xs text-muted-foreground mt-1">
-                              {completionStats.rate > 0
-                                ? `${completionStats.rate.toFixed(
-                                    0
-                                  )}% completion rate`
-                                : "No tasks completed"}
-                            </div>
-                            {completionStats.total > 0 && (
-                              <div className="text-xs mt-1">
-                                Tasks: {completionStats.completed}/
-                                {completionStats.total} (
-                                {completionStats.points}/
-                                {completionStats.maxPoints} points)
-                              </div>
-                            )}
-                            {completionStats.pomodoroHours > 0 && (
-                              <div className="text-xs mt-1">
-                                Focus time:{" "}
-                                {completionStats.pomodoroHours.toFixed(1)} hours
-                              </div>
-                            )}
-                          </PopoverContent>
-                        </Popover>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Legend */}
-            <div className="flex items-center justify-end mt-4 gap-1">
-              <div className="text-xs text-muted-foreground mr-1">Less</div>
-              <div className="size-4 rounded bg-muted"></div>
-              <div className="size-4 rounded bg-primary/10 dark:bg-primary/20"></div>
-              <div className="size-4 rounded bg-primary/30 dark:bg-primary/40"></div>
-              <div className="size-4 rounded bg-primary/50 dark:bg-primary/60"></div>
-              <div className="size-4 rounded bg-primary/80 dark:bg-primary/90"></div>
-              <div className="text-xs text-muted-foreground ml-1">More</div>
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-2 p-2 border flex-1 rounded">
-            {Array.from({ length: 5 }, (_, i) => {
-              const year = new Date().getFullYear() - 2 + i;
-              return (
-                <Button
-                  key={year}
-                  variant={selectedYear === year ? "default" : "outline"}
-                  className="w-full rounded"
-                  onClick={() => setSelectedYear(year)}
-                >
-                  {year}
-                </Button>
-              );
-            })}
-          </div>
-        </section>
+        {/* Heatmap Section */}
+        <ActivityHeatmap getCompletionRate={getCompletionRate} />
 
         <div className="grid gap-2 md:grid-cols-3">
           {/* Tags Analysis Section */}
-
           <Card className="rounded">
             <CardHeader>
               <div className="flex items-center gap-2">
