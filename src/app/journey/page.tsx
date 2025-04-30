@@ -7,21 +7,15 @@ import {
   startOfYear,
   endOfYear,
   eachDayOfInterval,
-  isSameDay,
 } from "date-fns";
 import {
-  ChevronLeft,
-  ChevronRight,
   Target,
   Clock,
   Flame,
   Trophy,
-  CheckCircle2,
-  BarChart3,
   Settings2,
-  Calendar,
-  Tag,
   Timer,
+  CheckCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -31,50 +25,18 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 import { useTaskStore } from "@/stores/useTaskStore";
 import { useTagsStore } from "@/stores/useTagsStore";
 import { cn } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import {
-  Bar,
-  BarChart,
-  PolarAngleAxis,
-  PolarGrid,
-  PolarRadiusAxis,
-  Radar,
-  RadarChart,
-  RadialBar,
-  RadialBarChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
-import {
-  ChartConfig,
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from "@/components/ui/chart";
+
 import { PriorityDonutChart } from "./priority-donut-chart";
 import { ProductivityByDayChart } from "./productivity-by-day-chart";
 import { PomodoroInsightsChart } from "./pomodoro-insights-chart";
 import HabitsTable from "./habits-table";
 import ActivityHeatmap from "./heatmap";
+import TagsChart from "./tags-chart";
 
 // Helper function to get pomodoro settings from localStorage
 const getPomodoroSettings = () => {
@@ -598,6 +560,33 @@ export default function JourneyPage() {
     },
   ];
 
+  const kpiCards = [
+    {
+      title: "Completed Tasks",
+      icon: CheckCircle,
+      description: "Completion rate:",
+      content: `${totalCompletedTasks} Tasks`,
+    },
+    {
+      title: "Total Pomodoros",
+      icon: Timer,
+      description: `Focused Hours: ${Math.round(totalFocusedHours)}h`,
+      content: `${totalPomodoros} Pomos`,
+    },
+    {
+      title: "Streak On Fire",
+      icon: Flame,
+      description: `Best streak: ${calculateLongestStreak} days`,
+      content: `${calculateCurrentStreak} Days`,
+    },
+    {
+      title: "Completed Goals",
+      icon: Target,
+      description: `Completion rate: ${Math.round(goalStats.rate)}%`,
+      content: `${goalStats.completed} Goals`,
+    },
+  ];
+
   return (
     <div className="flex flex-col h-screen ">
       <header className="flex bg-muted/20 items-center justify-between w-full p-2">
@@ -616,164 +605,53 @@ export default function JourneyPage() {
       <main className="flex-1 bg-muted/40 p-4 overflow-auto flex flex-col gap-2">
         {/* KPI Cards Section */}
         <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-4">
-          <Card className="gap-4 rounded">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-medium">
-                  Completed Tasks
-                </CardTitle>
-                <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
-              </div>
-              <CardDescription> Completion rate:</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {totalCompletedTasks} Tasks
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="gap-4 rounded">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-medium">
-                  Total Pomodoros
-                </CardTitle>
-                <Timer className="h-4 w-4 text-muted-foreground" />
-              </div>
-              <CardDescription>
-                Focused Hours: {Math.round(totalFocusedHours)}h
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{totalPomodoros} pomos</div>
-            </CardContent>
-          </Card>
-
-          <Card className="gap-4 rounded">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-medium">
-                  Streak On Fire
-                </CardTitle>
-                <Flame className="h-4 w-4 text-muted-foreground" />
-              </div>
-              <CardDescription>
-                Best streak: {calculateLongestStreak} days
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {calculateCurrentStreak} Days
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="gap-4 rounded">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-medium">
-                  Completed Goals
-                </CardTitle>
-                <Target className="h-4 w-4 text-muted-foreground" />
-              </div>
-              <CardDescription>
-                Completion rate: {Math.round(goalStats.rate)}%
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {goalStats.completed} Goals
-              </div>
-            </CardContent>
-          </Card>
+          {kpiCards.map((card, index) => {
+            const Icon = card.icon;
+            return (
+              <Card key={index} className="gap-4 rounded">
+                <CardHeader className="flex items-center justify-between">
+                  <div className="">
+                    <CardTitle className="text-sm font-medium">
+                      {card.title}
+                    </CardTitle>
+                    <CardDescription>{card.description}</CardDescription>
+                  </div>
+                  <Icon
+                    className="size-8 text-muted-foreground"
+                    strokeWidth={1}
+                  />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-semibold">{card.content}</div>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
 
         {/* Heatmap Section */}
         <ActivityHeatmap getCompletionRate={getCompletionRate} />
 
         <div className="grid gap-2 md:grid-cols-3">
-          {/* Tags Analysis Section */}
-          <Card className="rounded">
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <Tag className="h-4 w-4 text-muted-foreground" />
-                <CardTitle>Tags Analysis</CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent className="p-0">
-              <ChartContainer
-                config={{
-                  usage: {
-                    label: "Usage",
-                    color: "var(--chart-1)",
-                  },
-                  productivity: {
-                    label: "Productivity",
-                    color: "var(--chart-2)",
-                  },
-                }}
-              >
-                <ResponsiveContainer
-                  className="scale-110"
-                  width="100%"
-                  height="100%"
-                >
-                  <RadarChart data={dataaa}>
-                    <ChartTooltip
-                      content={<ChartTooltipContent indicator="line" />}
-                    />
-                    <PolarGrid gridType="circle" />
-                    <PolarAngleAxis dataKey="subject" />
-
-                    <Radar
-                      name="Productivity"
-                      dataKey="productivity"
-                      stroke="var(--primary)"
-                      fill="var(--primary)"
-                      fillOpacity={0.3}
-                      dot={{
-                        r: 4,
-                        fillOpacity: 1,
-                      }}
-                    />
-                    <Radar
-                      name="Usage"
-                      dataKey="usage"
-                      stroke="var(--color-productivity)"
-                      fill="var(--color-productivity)"
-                      fillOpacity={0.6}
-                      dot={{
-                        r: 4,
-                        fillOpacity: 1,
-                      }}
-                    />
-                  </RadarChart>
-                </ResponsiveContainer>
-              </ChartContainer>
-            </CardContent>
-          </Card>
-
-          {/* Productivity by Priority */}
+          <TagsChart data={dataaa} />
           <PriorityDonutChart data={completionByPriority} />
-
-          {/* Productivity by Day of Week */}
           <ProductivityByDayChart data={completionByDayOfWeek} />
-
-          {/* Pomodoro Insights */}
         </div>
 
         <div className="grid grid-cols-3 items-center gap-2">
-          <PomodoroInsightsChart
-            topPomodoroTasks={topPomodoroTasks}
-            totalFocusedHours={totalFocusedHours}
-            pomodoroSettings={pomodoroSettings}
-          />
-
-          <HabitsTable />
+          <div className="col-span-1 h-full">
+            <PomodoroInsightsChart
+              topPomodoroTasks={topPomodoroTasks}
+              totalFocusedHours={totalFocusedHours}
+              pomodoroSettings={pomodoroSettings}
+            />
+          </div>
+          <div className="col-span-2 h-full">
+            <HabitsTable />
+          </div>
         </div>
 
-        <Card>
+        <Card className="rounded">
           <CardHeader>
             <div className="flex items-center gap-2">
               <Trophy className="h-4 w-4 text-muted-foreground" />

@@ -10,40 +10,21 @@ import {
 } from "recharts";
 import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
 
-// Type definitions
 export interface TagData {
   subject: string;
   usage: number;
   productivity: number;
-  [key: string]: string | number; // For potential additional metrics
 }
 
-export interface TagsChartProps {
-  /** Array of tag data to display */
-  data: TagData[];
-  /** Chart title */
-  title?: string;
-  /** Primary metric name (default: "usage") */
-  usage?: string;
-  /** Secondary metric name (default: "productivity") */
-  secondaryMetric?: string;
-  /** Custom color for primary metric */
-  primaryColor?: string;
-  /** Custom color for secondary metric */
-  secondaryColor?: string;
-  /** Height of the chart container in pixels */
-  height?: number | string;
-}
-
-export default function TagsChart({ data, height = 300 }: TagsChartProps) {
+export default function TagsChart({ data }: { data: TagData[] }) {
   const chartConfig = {
     usage: {
       label: "Usage",
-      color: "var(--chart-1)",
+      color: "var(--chart-2)",
     },
     productivity: {
       label: "Productivity",
-      color: "var(--chart-2)",
+      color: "var(--primary)",
     },
   };
 
@@ -57,11 +38,7 @@ export default function TagsChart({ data, height = 300 }: TagsChartProps) {
       </CardHeader>
       <CardContent className="p-0">
         <ChartContainer config={chartConfig}>
-          <ResponsiveContainer
-            className="scale-110"
-            width="100%"
-            height={height}
-          >
+          <ResponsiveContainer className="scale-110" width="100%">
             <RadarChart data={data}>
               <ChartTooltip
                 content={<ChartTooltipContent indicator="line" />}
@@ -71,8 +48,8 @@ export default function TagsChart({ data, height = 300 }: TagsChartProps) {
               <Radar
                 name="Productivity"
                 dataKey="productivity"
-                stroke="var(--color--usage)"
-                fill="var(--color--usage)"
+                stroke="var(--color-productivity)"
+                fill="var(--color-productivity)"
                 fillOpacity={0.3}
                 dot={{
                   r: 4,
@@ -82,8 +59,8 @@ export default function TagsChart({ data, height = 300 }: TagsChartProps) {
               <Radar
                 name="Usage"
                 dataKey="usage"
-                stroke="var(--color-productivity)"
-                fill="var(--color-productivity)"
+                stroke="var(--color-usage)"
+                fill="var(--color-usage)"
                 fillOpacity={0.6}
                 dot={{
                   r: 4,
