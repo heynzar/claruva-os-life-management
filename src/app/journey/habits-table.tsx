@@ -164,7 +164,7 @@ const HabitsTable = () => {
   };
 
   return (
-    <Card className="w-full rounded">
+    <Card className="w-full h-full rounded">
       <CardHeader>
         <div className="flex justify-between">
           <div>
@@ -278,7 +278,8 @@ const HabitsTable = () => {
 
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                       <span className="px-2 py-1 text-xs font-medium rounded-full bg-success/20 text-success">
-                        {calculateStreak(task.id)} days
+                        {calculateStreak(task.id)}{" "}
+                        {calculateStreak(task.id) === 1 ? "day" : "days"}
                       </span>
                     </td>
                     {weekDays.map((day) => {

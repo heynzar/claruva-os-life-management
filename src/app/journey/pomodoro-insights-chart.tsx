@@ -10,7 +10,6 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-  CardAction,
 } from "@/components/ui/card";
 import {
   ChartConfig,
@@ -59,7 +58,7 @@ export function PomodoroInsightsChart({
   ];
 
   return (
-    <Card className="rounded w-full">
+    <Card className="rounded w-full h-full">
       <CardHeader className="items-center pb-0">
         <CardTitle className="flex items-center gap-2">
           <Clock className="h-4 w-4 text-muted-foreground" />

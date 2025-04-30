@@ -37,6 +37,7 @@ import { PomodoroInsightsChart } from "./pomodoro-insights-chart";
 import HabitsTable from "./habits-table";
 import ActivityHeatmap from "./heatmap";
 import TagsChart from "./tags-chart";
+import { AchievementsCard } from "./achievements";
 
 // Helper function to get pomodoro settings from localStorage
 const getPomodoroSettings = () => {
@@ -444,23 +445,8 @@ export default function JourneyPage() {
   const topPomodoroTasks = useMemo(() => {
     return [...tasks]
       .filter((task) => task.pomodoros && task.pomodoros > 0)
-      .sort((a, b) => (b.pomodoros || 0) - (a.pomodoros || 0))
-      .slice(0, 5);
+      .sort((a, b) => (b.pomodoros || 0) - (a.pomodoros || 0));
   }, [tasks]);
-
-  // Calculate pomodoro data for radial chart
-  const pomodoroChartData = useMemo(() => {
-    const focusTime = totalPomodoros * pomodoroSettings.pomodoro;
-    const breakTime = totalPomodoros * pomodoroSettings.shortBreak;
-
-    return [
-      {
-        month: "january",
-        desktop: focusTime,
-        mobile: breakTime,
-      },
-    ];
-  }, [totalPomodoros, pomodoroSettings]);
 
   // Calculate achievements
   const achievements = useMemo(() => {
@@ -517,7 +503,7 @@ export default function JourneyPage() {
         id: "pomodoros-100",
         title: "100 Pomodoros",
         description: "Complete 100 pomodoro sessions",
-        icon: Clock,
+        icon: Timer,
         achieved: totalPomodoros >= 100,
         progress: Math.min(totalPomodoros / 100, 1) * 100,
       },
@@ -525,7 +511,7 @@ export default function JourneyPage() {
         id: "pomodoros-500",
         title: "500 Pomodoros",
         description: "Complete 500 pomodoro sessions",
-        icon: Clock,
+        icon: Timer,
         achieved: totalPomodoros >= 500,
         progress: Math.min(totalPomodoros / 500, 1) * 100,
       },
@@ -651,60 +637,7 @@ export default function JourneyPage() {
           </div>
         </div>
 
-        <Card className="rounded">
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Trophy className="h-4 w-4 text-muted-foreground" />
-              <CardTitle>Your Achievements</CardTitle>
-            </div>
-            <CardDescription>Milestones and accomplishments</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {achievements.map((achievement) => (
-                <Card
-                  key={achievement.id}
-                  className={cn(
-                    "overflow-hidden transition-all",
-                    achievement.achieved ? "border-primary" : "opacity-70"
-                  )}
-                >
-                  <CardHeader className="p-4 pb-2">
-                    <div className="flex items-center gap-2">
-                      <div
-                        className={cn(
-                          "p-1.5 rounded-full",
-                          achievement.achieved ? "bg-primary/20" : "bg-muted"
-                        )}
-                      >
-                        <achievement.icon
-                          className={cn(
-                            "h-4 w-4",
-                            achievement.achieved
-                              ? "text-primary"
-                              : "text-muted-foreground"
-                          )}
-                        />
-                      </div>
-                      <CardTitle className="text-sm">
-                        {achievement.title}
-                      </CardTitle>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="p-4 pt-0">
-                    <CardDescription className="text-xs mb-2">
-                      {achievement.description}
-                    </CardDescription>
-                    <Progress value={achievement.progress} className="h-1" />
-                    <div className="text-xs text-right mt-1 text-muted-foreground">
-                      {achievement.progress.toFixed(0)}%
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+        <AchievementsCard achievements={achievements} />
       </main>
     </div>
   );
