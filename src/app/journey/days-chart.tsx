@@ -15,8 +15,13 @@ import {
   Tooltip,
   ResponsiveContainer,
   ReferenceLine,
+  TooltipProps,
 } from "recharts";
 import { ChartContainer } from "@/components/ui/chart";
+import {
+  NameType,
+  ValueType,
+} from "recharts/types/component/DefaultTooltipContent";
 
 type DayOfWeekData = {
   name: string;
@@ -26,7 +31,10 @@ type DayOfWeekData = {
   total: number;
 };
 
-const CustomDayTooltip = ({ active, payload }: any) => {
+const CustomDayTooltip = ({
+  active,
+  payload,
+}: TooltipProps<ValueType, NameType>) => {
   if (active && payload && payload.length) {
     const day: DayOfWeekData = payload[0].payload;
 

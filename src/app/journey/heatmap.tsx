@@ -53,7 +53,7 @@ export default function ActivityHeatmap({
   const startDate = new Date(selectedYear, 0, 1); // January 1st of selected year
   const endDate = new Date(selectedYear, 11, 31); // December 31st of selected year
 
-  let currentDate = new Date(startDate);
+  const currentDate = new Date(startDate);
   while (currentDate <= endDate) {
     daysInYear.push(new Date(currentDate));
     currentDate.setDate(currentDate.getDate() + 1);

@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Tag, Info, Sparkles, Box } from "lucide-react";
+import { Info, Sparkles, Box } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -14,7 +14,6 @@ import {
   PolarAngleAxis,
   Radar,
   Tooltip as ChartTooltip,
-  Legend,
 } from "recharts";
 import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
 

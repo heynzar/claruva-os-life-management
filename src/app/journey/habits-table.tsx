@@ -319,7 +319,7 @@ const HabitsTable = () => {
                             </button>
                           ) : (
                             <div className="size-5 mx-auto flex items-center justify-center select-none opacity-10">
-                              ///
+                              {"///"}
                             </div>
                           )}
                         </td>

@@ -6,6 +6,7 @@ import {
   Tooltip,
   Label,
   ResponsiveContainer,
+  TooltipProps,
 } from "recharts";
 import {
   Card,
@@ -16,6 +17,10 @@ import {
 } from "@/components/ui/card";
 import { ChartPie, Info, Sparkles } from "lucide-react";
 import { ChartContainer } from "@/components/ui/chart";
+import {
+  NameType,
+  ValueType,
+} from "recharts/types/component/DefaultTooltipContent";
 
 type PriorityData = {
   name: string;
@@ -79,10 +84,7 @@ export function PriorityDonutChart({ data }: { data: PriorityData[] }) {
   const CustomTooltip = ({
     active,
     payload,
-  }: {
-    active?: boolean;
-    payload?: any[];
-  }) => {
+  }: TooltipProps<ValueType, NameType>) => {
     if (active && payload && payload.length > 0) {
       const item: PriorityData = payload[0].payload;
       return (

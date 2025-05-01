@@ -1,13 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import {
-  format,
-  subDays,
-  startOfYear,
-  endOfYear,
-  eachDayOfInterval,
-} from "date-fns";
+import { format, subDays } from "date-fns";
 import { Target, Flame, Settings2, Timer, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -43,9 +37,6 @@ const getPomodoroSettings = () => {
 };
 
 export default function JourneyPage() {
-  const [selectedYear, setSelectedYear] = useState<number>(
-    new Date().getFullYear()
-  );
   const [pomodoroSettings, setPomodoroSettings] = useState({
     pomodoro: 25,
     shortBreak: 5,
@@ -58,13 +49,6 @@ export default function JourneyPage() {
   useEffect(() => {
     setPomodoroSettings(getPomodoroSettings());
   }, []);
-
-  // Get all days in the selected year for the heatmap
-  const daysInYear = useMemo(() => {
-    const start = startOfYear(new Date(selectedYear, 0, 1));
-    const end = endOfYear(new Date(selectedYear, 11, 31));
-    return eachDayOfInterval({ start, end });
-  }, [selectedYear]);
 
   // Calculate weighted completion rate for a specific date
   const getCompletionRate = (
@@ -506,6 +490,8 @@ export default function JourneyPage() {
       },
     ];
   }, [calculateLongestStreak, goalStats.completed, totalPomodoros]);
+
+  console.log(tagAnalytics);
 
   const dataaa = [
     {
