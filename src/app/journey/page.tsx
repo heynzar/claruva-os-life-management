@@ -2,7 +2,13 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { format, subDays } from "date-fns";
-import { Target, Flame, Settings2, Timer, CheckCircle } from "lucide-react";
+import {
+  Target,
+  Flame,
+  Settings2,
+  HistoryIcon,
+  CheckCircle,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -476,7 +482,7 @@ export default function JourneyPage() {
         id: "pomodoros-100",
         title: "100 Pomodoros",
         description: "Complete 100 pomodoro sessions",
-        icon: Timer,
+        icon: HistoryIcon,
         achieved: totalPomodoros >= 100,
         progress: Math.min(totalPomodoros / 100, 1) * 100,
       },
@@ -484,7 +490,7 @@ export default function JourneyPage() {
         id: "pomodoros-500",
         title: "500 Pomodoros",
         description: "Complete 500 pomodoro sessions",
-        icon: Timer,
+        icon: HistoryIcon,
         achieved: totalPomodoros >= 500,
         progress: Math.min(totalPomodoros / 500, 1) * 100,
       },
@@ -530,7 +536,7 @@ export default function JourneyPage() {
     },
     {
       title: "Total Pomodoros",
-      icon: Timer,
+      icon: HistoryIcon,
       description: `Focused Hours: ${Math.round(totalFocusedHours)}h`,
       content: `${totalPomodoros} Pomos`,
     },
@@ -599,15 +605,15 @@ export default function JourneyPage() {
           <ProductivityByDayChart data={completionByDayOfWeek} />
         </div>
 
-        <div className="grid grid-cols-3 items-center gap-2">
-          <div className="col-span-1 h-full">
+        <div className="grid grid-cols-1 lg:grid-cols-3 items-center gap-2">
+          <div className="lg:col-span-1 h-full">
             <PomodoroInsightsChart
               topPomodoroTasks={topPomodoroTasks}
               totalFocusedHours={totalFocusedHours}
               pomodoroSettings={pomodoroSettings}
             />
           </div>
-          <div className="col-span-2 h-full">
+          <div className="lg:col-span-2 h-full">
             <HabitsTable />
           </div>
         </div>

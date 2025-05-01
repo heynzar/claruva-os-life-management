@@ -60,7 +60,7 @@ export default function ActivityHeatmap({
   }
 
   return (
-    <section className="flex gap-2 w-full ">
+    <section className="flex flex-col-reverse md:flex-row gap-2 w-full ">
       {/* Heatmap Section */}
       <div className="relative overflow-x-auto border p-4 rounded flex-1">
         {/* Fixed width container to prevent wrapping */}
@@ -193,7 +193,7 @@ export default function ActivityHeatmap({
 
       {/* Year selector */}
       {showYearSelector && (
-        <div className="flex flex-col gap-2 p-2 border rounded w-42 max-h-[218px] overflow-y-auto">
+        <div className="flex md:flex-col gap-1 md:gap-2 p-2 border rounded w-full md:w-42 max-h-[218px] overflow-y-auto">
           {Array.from({ length: yearRange }, (_, i) => {
             const year = new Date().getFullYear() - yearOffset + i;
             return (
@@ -201,7 +201,7 @@ export default function ActivityHeatmap({
                 key={year}
                 size={yearRange > 4 ? "sm" : "default"}
                 variant={selectedYear === year ? "default" : "outline"}
-                className="w-full rounded"
+                className="w-28 md:w-full rounded"
                 onClick={() => setSelectedYear(year)}
               >
                 {year}

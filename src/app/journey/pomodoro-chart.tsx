@@ -69,7 +69,7 @@ export function PomodoroInsightsChart({
       <CardContent className="relative flex flex-col flex-1 items-center pb-0">
         <ChartContainer
           config={chartConfig}
-          className="w-full scale-110 absolute -top-4"
+          className="w-full scale-110 sm:scale-125 absolute top-4 sm:-top-28 lg:top-4 xl:top-0"
         >
           <RadialBarChart
             data={chartData}

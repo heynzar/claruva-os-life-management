@@ -143,8 +143,8 @@ export function PriorityDonutChart({ data }: { data: PriorityData[] }) {
                     data={data}
                     dataKey="rate"
                     nameKey="name"
-                    innerRadius={70}
-                    outerRadius={100}
+                    innerRadius={60}
+                    outerRadius={90}
                   >
                     {data.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />

@@ -164,9 +164,9 @@ const HabitsTable = () => {
   };
 
   return (
-    <Card className="w-full h-full rounded">
+    <Card className="w-full h-full rounded gap-0 sm:gap-6">
       <CardHeader>
-        <div className="flex justify-between">
+        <div className="flex flex-col gap-6 sm:gap-2 sm:flex-row justify-between">
           <div>
             <CardTitle className="flex items-center gap-2">
               <RotateCcw className="h-4 w-4 text-muted-foreground" />
@@ -182,9 +182,9 @@ const HabitsTable = () => {
                 variant="secondary"
                 size="sm"
                 onClick={goToCurrentWeek}
-                className="h-8"
+                className="h-8 hidden sm:flex"
               >
-                Current Week
+                Current
               </Button>
             )}
             <Button
@@ -208,22 +208,33 @@ const HabitsTable = () => {
             >
               <ChevronRight className="h-4 w-4" />
             </Button>
+
+            {currentWeekOffset !== 0 && (
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={goToCurrentWeek}
+                className="h-8 sm:hidden"
+              >
+                Current
+              </Button>
+            )}
           </div>
         </div>
       </CardHeader>
 
       <CardContent className="overflow-x-auto">
-        <div className="border rounded overflow-hidden">
+        <div className="border rounded overflow-auto">
           <table className="min-w-full divide-y divide-border">
             <thead className="bg-muted/40">
               <tr className="divide-x divide-border">
-                <th className="px-6 py-3  text-left text-xs font-medium text-muted-foreground uppercase tracking-wider border-b">
+                <th className="px-4 py-3  text-left text-xs font-medium text-muted-foreground uppercase tracking-wider border-b">
                   <span className="flex items-center gap-2">
                     <RotateCcw className="size-4" strokeWidth={1} />
                     Habit
                   </span>
                 </th>
-                <th className="pl-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider border-b">
+                <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider border-b">
                   <span className="flex items-center gap-2">
                     <Flame className="size-4" strokeWidth={1} />
                     Streak
@@ -264,7 +275,7 @@ const HabitsTable = () => {
                     key={task.id}
                     className="hover:bg-muted/50 divide-x divide-border"
                   >
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-foreground">
+                    <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-foreground">
                       <div className="flex items-center">
                         <div
                           className={cn(
@@ -276,7 +287,7 @@ const HabitsTable = () => {
                       </div>
                     </td>
 
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-muted-foreground">
                       <span className="px-2 py-1 text-xs font-medium rounded-full bg-success/20 text-success">
                         {calculateStreak(task.id)}{" "}
                         {calculateStreak(task.id) === 1 ? "day" : "days"}
