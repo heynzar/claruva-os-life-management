@@ -39,7 +39,7 @@ export function AchievementsCard({ achievements }: AchievementsCardProps) {
               key={achievement.id}
               className={cn(
                 "overflow-hidden p-2 gap-2 transition-all rounded ",
-                achievement.achieved ? "border-primary" : "opacity-70"
+                achievement.achieved ? "bg-primary/10" : "opacity-70"
               )}
             >
               <CardHeader className="p-4 pb-2 border">

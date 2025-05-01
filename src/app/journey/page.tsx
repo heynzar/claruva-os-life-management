@@ -8,15 +8,7 @@ import {
   endOfYear,
   eachDayOfInterval,
 } from "date-fns";
-import {
-  Target,
-  Clock,
-  Flame,
-  Trophy,
-  Settings2,
-  Timer,
-  CheckCircle,
-} from "lucide-react";
+import { Target, Flame, Settings2, Timer, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -28,12 +20,10 @@ import {
 
 import { useTaskStore } from "@/stores/useTaskStore";
 import { useTagsStore } from "@/stores/useTagsStore";
-import { cn } from "@/lib/utils";
-import { Progress } from "@/components/ui/progress";
 
-import { PriorityDonutChart } from "./priority-donut-chart";
-import { ProductivityByDayChart } from "./productivity-by-day-chart";
-import { PomodoroInsightsChart } from "./pomodoro-insights-chart";
+import { PriorityDonutChart } from "./priority-chart";
+import { ProductivityByDayChart } from "./days-chart";
+import { PomodoroInsightsChart } from "./pomodoro-chart";
 import HabitsTable from "./habits-table";
 import ActivityHeatmap from "./heatmap";
 import TagsChart from "./tags-chart";
@@ -56,7 +46,6 @@ export default function JourneyPage() {
   const [selectedYear, setSelectedYear] = useState<number>(
     new Date().getFullYear()
   );
-  const [activeTab, setActiveTab] = useState<string>("overview");
   const [pomodoroSettings, setPomodoroSettings] = useState({
     pomodoro: 25,
     shortBreak: 5,
@@ -521,27 +510,27 @@ export default function JourneyPage() {
   const dataaa = [
     {
       subject: "spiritual ✨",
-      usage: 15,
-      productivity: 60,
+      usage: 100,
+      productivity: 100,
     },
     {
       subject: "health",
-      usage: 19,
+      usage: 72,
       productivity: 30,
     },
     {
       subject: "Personal",
-      usage: 30,
+      usage: 68,
       productivity: 40,
     },
     {
       subject: "Life",
-      usage: 10,
+      usage: 36,
       productivity: 40,
     },
     {
       subject: "mental",
-      usage: 2,
+      usage: 12,
       productivity: 50,
     },
   ];

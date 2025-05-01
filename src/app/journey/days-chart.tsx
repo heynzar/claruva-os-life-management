@@ -6,7 +6,7 @@ import {
   CardContent,
   CardDescription,
 } from "@/components/ui/card";
-import { Calendar, CalendarDays, Info, Sparkles } from "lucide-react";
+import { CalendarDays, Info, Sparkles } from "lucide-react";
 import {
   BarChart,
   Bar,
@@ -16,7 +16,7 @@ import {
   ResponsiveContainer,
   ReferenceLine,
 } from "recharts";
-import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
+import { ChartContainer } from "@/components/ui/chart";
 
 type DayOfWeekData = {
   name: string;
@@ -24,6 +24,27 @@ type DayOfWeekData = {
   rate: number;
   completed: number;
   total: number;
+};
+
+const CustomDayTooltip = ({ active, payload }: any) => {
+  if (active && payload && payload.length) {
+    const day: DayOfWeekData = payload[0].payload;
+
+    return (
+      <div className="bg-background w-36 border rounded-lg p-2.5 shadow-sm text-xs">
+        <p className="font-medium mb-1">{day.name}</p>
+        <div className="text-muted-foreground flex items-center justify-between">
+          <p className="flex items-center gap-1">
+            <span className="bg-primary size-3 rounded" />
+            <span>Rate</span>
+          </p>
+          <span> {Math.round(day.rate)}%</span>
+        </div>
+      </div>
+    );
+  }
+
+  return null;
 };
 
 export function ProductivityByDayChart({ data }: { data: DayOfWeekData[] }) {
@@ -89,7 +110,7 @@ export function ProductivityByDayChart({ data }: { data: DayOfWeekData[] }) {
   // Chart content to display when there's no data
   const EmptyState = () => (
     <div className="flex flex-col items-center justify-center h-64 text-center p-4">
-      <Info className="h-12 w-12 text-muted-foreground mb-2" />
+      <Info strokeWidth={1} className="h-12 w-12 text-muted-foreground mb-2" />
       <h3 className="text-lg font-medium">No daily productivity data yet</h3>
       <p className="text-muted-foreground mt-1">
         Complete tasks throughout the week to see your productivity patterns
@@ -98,7 +119,7 @@ export function ProductivityByDayChart({ data }: { data: DayOfWeekData[] }) {
   );
 
   return (
-    <Card className="rounded">
+    <Card className="rounded gap-4">
       <CardHeader>
         <div className="flex items-center gap-2">
           <CalendarDays className="h-4 w-4 text-muted-foreground" />
@@ -114,7 +135,7 @@ export function ProductivityByDayChart({ data }: { data: DayOfWeekData[] }) {
             <ChartContainer
               config={{
                 rate: {
-                  label: "Completion Rate",
+                  label: "Rate",
                   color: "var(--primary)",
                 },
               }}
@@ -129,7 +150,8 @@ export function ProductivityByDayChart({ data }: { data: DayOfWeekData[] }) {
                     tickFormatter={(value) => `${value}%`}
                     domain={[0, 100]}
                   />
-                  <Tooltip content={<ChartTooltipContent />} />
+                  <Tooltip content={<CustomDayTooltip />} />
+
                   <ReferenceLine
                     y={stats.averageRate}
                     stroke="#888"
@@ -145,10 +167,12 @@ export function ProductivityByDayChart({ data }: { data: DayOfWeekData[] }) {
             </ChartContainer>
 
             {/* Productivity insights */}
-            <div className="px-6 py-4 mt-1 text-sm text-muted-foreground flex items-start gap-2 border-t">
-              <Sparkles />
-              <p>{insights}</p>
-            </div>
+            {stats.hasData && (
+              <div className="px-6 py-4 mt-4 text-sm text-muted-foreground flex items-start gap-2 border-t">
+                <Sparkles />
+                <p>{insights}</p>
+              </div>
+            )}
           </>
         )}
       </CardContent>
