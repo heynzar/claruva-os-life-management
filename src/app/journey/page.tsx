@@ -380,6 +380,9 @@ export default function JourneyPage() {
       tagStats[tag] = { count: 0, completed: 0, total: 0 };
     });
 
+    // Count total number of tasks (for percentage calculation)
+    const totalTaskCount = tasks.length;
+
     // Calculate stats
     tasks.forEach((task) => {
       if (task.tags && task.tags.length > 0) {
@@ -387,10 +390,8 @@ export default function JourneyPage() {
           if (!tagStats[tag]) {
             tagStats[tag] = { count: 0, completed: 0, total: 0 };
           }
-
           tagStats[tag].count++;
           tagStats[tag].total++;
-
           if (
             (task.type === "daily" &&
               task.dueDate &&
@@ -408,6 +409,8 @@ export default function JourneyPage() {
       .map(([tag, stats]) => ({
         tag,
         count: stats.count,
+        usagePercentage:
+          totalTaskCount > 0 ? (stats.count / totalTaskCount) * 100 : 0,
         productivityRate:
           stats.total > 0 ? (stats.completed / stats.total) * 100 : 0,
       }))
@@ -415,8 +418,8 @@ export default function JourneyPage() {
       .slice(0, 8) // Limit to top 8 tags
       .map((item) => ({
         subject: item.tag,
-        usage: item.count,
-        productivity: item.productivityRate,
+        usage: Math.round(item.usagePercentage), // Keep as number for type compatibility
+        productivity: Math.round(item.productivityRate), // Keep as number for type compatibility
       }));
   }, [tasks, tags, isTaskCompletedOnDate]);
 

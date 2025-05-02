@@ -57,6 +57,33 @@ export function PomodoroInsightsChart({
     },
   ];
 
+  function formatMinutes(totalMinutes: number | undefined) {
+    // Handle invalid input
+    if (
+      totalMinutes === undefined ||
+      totalMinutes === null ||
+      isNaN(totalMinutes)
+    ) {
+      return "0min";
+    }
+
+    // Handle negative values
+    totalMinutes = Math.abs(totalMinutes);
+
+    // Calculate hours and minutes
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+
+    // Format the result
+    if (hours === 0) {
+      return `${minutes}min`;
+    } else if (minutes === 0) {
+      return `${hours}h`;
+    } else {
+      return `${hours}h ${minutes}min`;
+    }
+  }
+
   return (
     <Card className="rounded w-full h-full">
       <CardHeader className="items-center pb-0">
@@ -136,12 +163,7 @@ export function PomodoroInsightsChart({
                     {task.name}
                   </span>
                   <Badge variant="outline">
-                    {task.pomodoros || 0} 🍅 (
-                    {(
-                      ((task.pomodoros || 0) * pomodoroSettings.pomodoro) /
-                      60
-                    ).toFixed(1)}
-                    h)
+                    {formatMinutes(task.pomodoros)} 🍅
                   </Badge>
                 </div>
               ))
