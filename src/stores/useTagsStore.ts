@@ -9,15 +9,7 @@ interface TagsStore {
   resetToDefaults: () => void;
 }
 
-const defaultTags = [
-  "Work",
-  "Personal",
-  "Urgent",
-  "Later",
-  "Ideas",
-  "Health",
-  "Learning",
-];
+const defaultTags = ["Deen", "Growth", "Work", "Study", "Health"];
 
 export const useTagsStore = create<TagsStore>()(
   persist(

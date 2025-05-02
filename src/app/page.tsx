@@ -36,54 +36,92 @@ import PreferencePopover from "@/components/preference-popover";
 const initialTasksData: Task[] = [
   {
     id: "1",
-    name: "Complete project proposal",
-    description: "Finish the draft and send it to the team for review",
-    isCompleted: false,
+    name: "Summarize the Book",
+    description: "Extract key insights and prepare slides for the team review.",
+    isCompleted: true,
     type: "daily",
-    dueDate: "2025-04-10",
-    tags: ["Work"],
-    priority: "high",
-    repeatedDays: ["Monday", "Wednesday", "Friday"],
+    dueDate: new Date(new Date().setDate(new Date().getDate() - 1))
+      .toISOString()
+      .split("T")[0],
+    tags: ["Growth"],
+    priority: "low",
+    repeatedDays: [],
     pomodoros: 2,
-    position: 1,
+    position: 3,
     completedDates: [],
     positionsByDate: {},
   },
   {
     id: "2",
-    name: "Go for a run",
-    description: "30 minutes jogging in the park",
-    isCompleted: true,
+    name: "Pray at the Masjid 📌",
+    description: "Attend all 5 daily prayers at the masjid.",
+    isCompleted: false,
     type: "daily",
-    dueDate: "2025-04-10",
-    tags: ["Health"],
-    priority: "medium",
-    repeatedDays: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
-    pomodoros: 1,
-    position: 2,
-    completedDates: [],
+    dueDate: new Date(new Date().setDate(new Date().getDate() - 1))
+      .toISOString()
+      .split("T")[0],
+    tags: ["Deen"],
+    priority: "high",
+    repeatedDays: [
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday",
+      "Sunday",
+    ],
+    pomodoros: 0,
+    position: 1,
+    completedDates: [
+      new Date(new Date().setDate(new Date().getDate() - 1))
+        .toISOString()
+        .split("T")[0],
+    ],
     positionsByDate: {},
   },
   {
     id: "3",
-    name: "Buy groceries",
-    description: "Milk, eggs, bread, and vegetables",
-    isCompleted: true,
+    name: "Gym Workout ⚡",
+    description: "Do 30 mins of cardio and full-body strength training.",
+    isCompleted: false,
     type: "daily",
-    dueDate: "2025-04-11",
-    tags: ["Personal"],
-    priority: "low",
+    dueDate: new Date(new Date().setDate(new Date().getDate() - 1))
+      .toISOString()
+      .split("T")[0],
+    tags: ["Health"],
+    priority: "medium",
+    repeatedDays: ["Tuesday", "Wednesday", "Friday", "Saturday"],
+    pomodoros: 0,
+    position: 2,
+    completedDates: [
+      new Date(new Date().setDate(new Date().getDate() - 1))
+        .toISOString()
+        .split("T")[0],
+    ],
+    positionsByDate: {},
+  },
+  {
+    id: "4",
+    name: "Study for Database Exam",
+    description: "Review chapters 5–8 and practice core SQL queries.",
+    isCompleted: false,
+    type: "daily",
+    dueDate: new Date().toISOString().split("T")[0],
+    tags: ["Study"],
+    priority: "high",
     repeatedDays: [],
     pomodoros: 0,
-    position: 1,
+    position: 7,
     completedDates: [],
     positionsByDate: {},
   },
-  // Add some initial goals
+
+  // Weekly Goals
   {
-    id: "4",
-    name: "Complete online course",
-    description: "Finish the React advanced course",
+    id: "10",
+    name: "Fast on Mon & Thur ✨",
+    description: "Observe Sunnah fasts for spiritual discipline and health.",
     isCompleted: false,
     type: "weekly",
     timeFrameKey: `${new Date().getFullYear()}-W${getWeek(new Date(), {
@@ -91,39 +129,43 @@ const initialTasksData: Task[] = [
     })
       .toString()
       .padStart(2, "0")}`,
-    tags: ["Learning"],
+    tags: ["Deen"],
     priority: "medium",
     pomodoros: 0,
-    position: 1,
-    repeatedDays: ["weekly"], // Indicates this goal repeats weekly
+    position: 2,
+    repeatedDays: ["weekly"],
   },
+
+  // Monthly Goals
   {
-    id: "5",
-    name: "Read 2 books",
-    description: "Fiction and non-fiction",
+    id: "11",
+    name: "Read the Quran 📕",
+    description: "Establish a consistent Quran reading routine this month.",
     isCompleted: false,
     type: "monthly",
     timeFrameKey: `${new Date().getFullYear()}-${(new Date().getMonth() + 1)
       .toString()
       .padStart(2, "0")}`,
-    tags: ["Personal"],
-    priority: "low",
+    tags: ["Deen"],
+    priority: "high",
     pomodoros: 0,
-    position: 1,
-    repeatedDays: ["monthly"], // Indicates this goal repeats monthly
+    position: 2,
+    repeatedDays: ["monthly"],
   },
+
+  // Yearly Goals
   {
-    id: "6",
-    name: "Learn a new language",
-    description: "Reach intermediate level in Spanish",
+    id: "12",
+    name: "Reach Intermediate Level in French",
+    description: "Complete a course and practice weekly conversations.",
     isCompleted: false,
     type: "yearly",
     timeFrameKey: `${new Date().getFullYear()}`,
-    tags: ["Learning"],
-    priority: "high",
+    tags: ["Growth"],
+    priority: "medium",
     pomodoros: 0,
     position: 1,
-    repeatedDays: ["yearly"], // Indicates this goal repeats yearly
+    repeatedDays: [],
   },
 ];
 

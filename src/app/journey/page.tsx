@@ -497,36 +497,6 @@ export default function JourneyPage() {
     ];
   }, [calculateLongestStreak, goalStats.completed, totalPomodoros]);
 
-  console.log(tagAnalytics);
-
-  const dataaa = [
-    {
-      subject: "spiritual ✨",
-      usage: 100,
-      productivity: 100,
-    },
-    {
-      subject: "health",
-      usage: 72,
-      productivity: 30,
-    },
-    {
-      subject: "Personal",
-      usage: 68,
-      productivity: 40,
-    },
-    {
-      subject: "Life",
-      usage: 36,
-      productivity: 40,
-    },
-    {
-      subject: "mental",
-      usage: 12,
-      productivity: 50,
-    },
-  ];
-
   const kpiCards = [
     {
       title: "Completed Tasks",
@@ -600,7 +570,7 @@ export default function JourneyPage() {
         <ActivityHeatmap getCompletionRate={getCompletionRate} />
 
         <div className="grid gap-2 md:grid-cols-3">
-          <TagsChart data={dataaa} />
+          <TagsChart data={tagAnalytics} />
           <PriorityDonutChart data={completionByPriority} />
           <ProductivityByDayChart data={completionByDayOfWeek} />
         </div>
