@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Info, Sparkles, Box } from "lucide-react";
+import { Info, Box, Sparkles } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -59,6 +59,14 @@ export default function TagsChart({ data }: { data: TagData[] }) {
           )[0]
         : null;
 
+    // Find the least productive tag (with at least 2 usage count)
+    const leastProductiveTag =
+      significantTags.length > 0
+        ? [...significantTags].sort(
+            (a, b) => a.productivity - b.productivity
+          )[0]
+        : null;
+
     // Find the most used tag
     const mostUsedTag = [...data].sort((a, b) => b.usage - a.usage)[0];
 
@@ -69,38 +77,48 @@ export default function TagsChart({ data }: { data: TagData[] }) {
     const avgProductivity =
       data.reduce((sum, tag) => sum + tag.productivity, 0) / data.length;
 
-    // Generate insight message
+    // Find tags with below average productivity
+    const lowProductivityTags = data.filter(
+      (tag) => tag.productivity < avgProductivity && tag.usage >= 2
+    );
+
+    // Find highest usage tag with low productivity
+    const highUseLowProductivityTag = [...data]
+      .filter((tag) => tag.productivity < avgProductivity - 10)
+      .sort((a, b) => b.usage - a.usage)[0];
+
+    // Generate insight message focusing on improvement areas
     let message;
-    if (mostProductiveTag && mostUsedTag) {
-      if (mostProductiveTag.subject === mostUsedTag.subject) {
-        message = `Your most used tag "${
-          mostProductiveTag.subject
-        }" is also your most productive at ${Math.round(
-          mostProductiveTag.productivity
-        )}%.`;
-      } else if (mostProductiveTag.productivity > avgProductivity + 20) {
-        message = `"${
-          mostProductiveTag.subject
-        }" tasks have your highest completion rate (${Math.round(
-          mostProductiveTag.productivity
-        )}%). Consider using this tag more.`;
-      } else {
-        message = `You use "${
-          mostUsedTag.subject
-        }" most frequently with ${Math.round(
-          avgProductivity
-        )}% average completion across tags.`;
-      }
+    if (highUseLowProductivityTag) {
+      message = `Your "${
+        highUseLowProductivityTag.subject
+      }" tasks show low completion rates (${Math.round(
+        highUseLowProductivityTag.productivity
+      )}%) despite frequent use. Consider breaking these down into smaller tasks.`;
+    } else if (leastProductiveTag && leastProductiveTag.usage >= 3) {
+      message = `You're struggling with "${
+        leastProductiveTag.subject
+      }" tasks (${Math.round(
+        leastProductiveTag.productivity
+      )}% completion). Try tackling these earlier in the day or breaking them into smaller steps.`;
+    } else if (lowProductivityTags.length > 0) {
+      const tagNames = lowProductivityTags
+        .slice(0, 2)
+        .map((t) => `"${t.subject}"`)
+        .join(" and ");
+      message = `Your ${tagNames} categories show below-average completion rates. Consider reviewing your approach to these task types.`;
     } else {
       message =
-        "Add more tagged tasks to see meaningful productivity patterns.";
+        "Your productivity is balanced across tags. For further improvement, try adding more specific tags to identify potential weak areas.";
     }
 
     return {
       hasData: true,
       topTags,
       mostProductiveTag,
+      leastProductiveTag,
       mostUsedTag,
+      highUseLowProductivityTag,
       message,
     };
   }, [data]);
@@ -117,13 +135,15 @@ export default function TagsChart({ data }: { data: TagData[] }) {
   );
 
   return (
-    <Card className="rounded gap-4">
+    <Card className="rounded gap-4 pb-0">
       <CardHeader>
         <div className="flex items-center gap-2">
-          <Box className="h-4 w-4 text-muted-foreground" />
+          <Box className="size-4 text-muted-foreground" />
           <CardTitle>Tags Analysis</CardTitle>
         </div>
-        <CardDescription>Most used tags and productivity rate</CardDescription>
+        <CardDescription>
+          Identify improvement areas in your system
+        </CardDescription>
       </CardHeader>
       <CardContent className="p-0">
         {!insights.hasData ? (
@@ -170,9 +190,11 @@ export default function TagsChart({ data }: { data: TagData[] }) {
 
             {/* Insights section */}
             {insights.hasData && (
-              <div className="px-6 py-4 mt-4 text-sm text-muted-foreground flex items-start gap-2 border-t">
-                <Sparkles />
-                <p>{insights.message}</p>
+              <div className="mt-4 text-muted-foreground flex items-start gap-2 border-t">
+                <span className="p-4 pr-0 mt-1">
+                  <Sparkles className="size-4" />
+                </span>
+                <p className="p-4 pl-0 text-sm">{insights.message}</p>
               </div>
             )}
           </>

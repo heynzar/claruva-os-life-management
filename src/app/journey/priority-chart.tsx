@@ -37,10 +37,38 @@ export function PriorityDonutChart({ data }: { data: PriorityData[] }) {
     const totalRate =
       totalTasks > 0 ? Math.round((totalCompleted / totalTasks) * 100) : 0;
 
+    // Find data for each priority level
     const highPriorityData = data.find((item) => item.name === "High");
+    const mediumPriorityData = data.find((item) => item.name === "Medium");
+    const lowPriorityData = data.find((item) => item.name === "Low");
+
+    // Calculate stats for each level
     const highPriorityRate = highPriorityData?.rate || 0;
     const highPriorityTotal = highPriorityData?.total || 0;
     const highPriorityCompleted = highPriorityData?.completed || 0;
+
+    const mediumPriorityRate = mediumPriorityData?.rate || 0;
+    const mediumPriorityTotal = mediumPriorityData?.total || 0;
+
+    const lowPriorityRate = lowPriorityData?.rate || 0;
+    const lowPriorityTotal = lowPriorityData?.total || 0;
+
+    // Find lowest completion rate among priorities with tasks
+    const prioritiesWithTasks = data.filter((item) => item.total > 0);
+    const lowestRatePriority =
+      prioritiesWithTasks.length > 0
+        ? prioritiesWithTasks.reduce(
+            (lowest, current) =>
+              current.rate < lowest.rate ? current : lowest,
+            prioritiesWithTasks[0]
+          )
+        : null;
+
+    // Calculate imbalance between high and low priorities
+    const highLowImbalance =
+      highPriorityTotal > 0 && lowPriorityTotal > 0
+        ? lowPriorityRate - highPriorityRate
+        : 0;
 
     return {
       totalTasks,
@@ -49,25 +77,64 @@ export function PriorityDonutChart({ data }: { data: PriorityData[] }) {
       highPriorityRate,
       highPriorityTotal,
       highPriorityCompleted,
+      mediumPriorityRate,
+      mediumPriorityTotal,
+      lowPriorityRate,
+      lowPriorityTotal,
+      lowestRatePriority,
+      highLowImbalance,
       hasData: totalTasks > 0,
     };
   }, [data]);
 
   const description = useMemo(() => {
+    // When there's no data
     if (!stats.hasData) {
       return "Add your first task to start tracking productivity across priority levels.";
     }
 
+    // When there are no high priority tasks
     if (stats.highPriorityTotal === 0) {
-      return "Consider adding high priority tasks to focus on what matters most.";
+      return "Missing high priority tasks. Identify and add your most important work to balance your priorities.";
     }
 
+    // Focus on the lowest performing priority
+    if (stats.lowestRatePriority) {
+      const priorityName = stats.lowestRatePriority.name;
+      const rate = Math.round(stats.lowestRatePriority.rate);
+
+      if (priorityName === "High" && rate < 60) {
+        return `Critical weakness: Only ${rate}% completion on high priority tasks. Focus here first to improve overall productivity.`;
+      } else if (priorityName === "High") {
+        return `Your high priority completion rate (${rate}%) needs improvement. These tasks should be your primary focus.`;
+      } else if (rate < 40) {
+        return `${priorityName} priority tasks have a low completion rate (${rate}%). Consider why these tasks are being neglected.`;
+      }
+    }
+
+    // High-low priority imbalance issue
+    if (stats.highLowImbalance > 20) {
+      return `You're completing low priority tasks at a higher rate than high priority ones (${Math.round(
+        stats.highLowImbalance
+      )}% difference). Re-evaluate your task selection strategy.`;
+    }
+
+    // Specific feedback for high priority tasks
     if (stats.highPriorityRate < 50) {
-      return "Focus on completing high priority tasks to improve your productivity.";
-    } else if (stats.highPriorityRate < 80) {
-      return "Good progress on high priority tasks. Keep focusing on what matters most.";
+      return `Your high priority task completion (${Math.round(
+        stats.highPriorityRate
+      )}%) is too low. Block time specifically for these critical tasks.`;
+    } else if (stats.highPriorityRate < 75) {
+      return `Aim to improve your high priority completion rate from ${Math.round(
+        stats.highPriorityRate
+      )}% to at least 75%. Try tackling them earlier in the day.`;
+    } else if (
+      stats.highPriorityTotal < stats.totalTasks * 0.2 &&
+      stats.totalTasks > 5
+    ) {
+      return "You're handling high priorities well, but they make up a small portion of your workload. Ensure you're properly categorizing important work.";
     } else {
-      return "Excellent job completing high priority tasks! You're focusing on what matters.";
+      return "Good high priority completion. For better productivity, make sure your high priority tasks align with your most important goals.";
     }
   }, [stats]);
 
@@ -114,13 +181,15 @@ export function PriorityDonutChart({ data }: { data: PriorityData[] }) {
   };
 
   return (
-    <Card className="rounded gap-4">
+    <Card className="rounded gap-4 pb-0">
       <CardHeader>
         <div className="flex items-center gap-2">
           <ChartPie className="size-4 text-muted-foreground" />
-          <CardTitle>Productivity by Priority</CardTitle>
+          <CardTitle>Priority Effectiveness</CardTitle>
         </div>
-        <CardDescription>Completion rates per priority level</CardDescription>
+        <CardDescription>
+          Identify issues in your priority execution
+        </CardDescription>
       </CardHeader>
 
       <CardContent className="p-0">
@@ -186,9 +255,11 @@ export function PriorityDonutChart({ data }: { data: PriorityData[] }) {
               </ResponsiveContainer>
             </ChartContainer>
             {stats.hasData && (
-              <div className="px-6 py-4 mt-4 text-sm text-muted-foreground flex items-start gap-2 border-t">
-                <Sparkles />
-                <p>{description}</p>
+              <div className="mt-4 text-muted-foreground flex items-start gap-2 border-t">
+                <span className="p-4 pr-0 mt-1">
+                  <Sparkles className="size-4" />
+                </span>
+                <p className="p-4 pl-0 text-sm">{description}</p>
               </div>
             )}
           </>
