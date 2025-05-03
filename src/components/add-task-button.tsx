@@ -4,6 +4,7 @@ import type React from "react";
 import { useState, useRef, useEffect } from "react";
 import { type Task, useTaskStore } from "@/stores/useTaskStore";
 import { v4 as uuidv4 } from "uuid";
+import { useTagsStore } from "@/stores/useTagsStore";
 
 interface AddTaskButtonProps {
   type?: Task["type"];
@@ -30,27 +31,61 @@ export default function AddTaskButton({
 
   const saveTask = () => {
     if (taskName.trim()) {
-      // Create a new task with default values
+      const original = taskName.trim();
+
+      // Extract hashtags
+      const matchedTags = original.match(/#\w+/g) || [];
+      const rawTags = matchedTags.map((tag) => tag.slice(1).toLowerCase());
+
+      // Capitalize helper
+      const capitalize = (word: string) =>
+        word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+      const capitalizedTags = Array.from(new Set(rawTags.map(capitalize)));
+
+      // Determine priority
+      let priority: Task["priority"] = "low";
+      const priorityMatch = original.match(/^(!!!|!!|!)\s|\s(!!!|!!|!)$/);
+      if (priorityMatch) {
+        const p = priorityMatch[0].trim();
+        if (p === "!!!") priority = "high";
+        else if (p === "!!") priority = "medium";
+      }
+
+      // Remove hashtags and priority indicators from the name
+      const cleanedTaskName = original
+        .replace(/#\w+/g, "") // remove hashtags
+        .replace(/\s*(!!!|!!|!)\s*$/, "") // remove priority at end
+        .replace(/^(!!!|!!|!)\s*/, "") // remove priority at beginning
+        .replace(/\s+/g, " ") // normalize extra spaces
+        .trim();
+
+      // Add missing tags to global store
+      const { tags, addTag } = useTagsStore.getState();
+      capitalizedTags.forEach((newTag) => {
+        const exists = tags.some(
+          (t) => t.toLowerCase() === newTag.toLowerCase()
+        );
+        if (!exists) addTag(newTag);
+      });
+
       const newTask: Task = {
         id: uuidv4(),
-        name: taskName.trim(),
+        name: cleanedTaskName,
         description: "",
-        type, // Use the provided type
+        type,
         isCompleted: false,
-        priority: "low",
+        priority,
         pomodoros: 0,
-        position: 999, // High position to place at the end
-        tags: [],
+        position: 999,
+        tags: capitalizedTags,
       };
 
-      // Add type-specific properties
       if (type === "daily" && date) {
         newTask.dueDate = date;
       } else if (type !== "daily" && defaultTimeFrameKey) {
         newTask.timeFrameKey = defaultTimeFrameKey;
       }
 
-      // Add empty arrays for task-specific properties
       if (type === "daily") {
         newTask.repeatedDays = [];
         newTask.completedDates = [];
@@ -59,10 +94,7 @@ export default function AddTaskButton({
 
       addTask(newTask);
       setTaskName("");
-    }
-
-    // If taskName is empty and we're saving, exit edit mode
-    if (!taskName.trim()) {
+    } else {
       setIsEditing(false);
     }
   };

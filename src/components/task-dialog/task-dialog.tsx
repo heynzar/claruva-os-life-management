@@ -144,7 +144,7 @@ export default function TaskDialog({
       }
 
       setNewTags([]);
-      setNewPriority("medium");
+      setNewPriority("low");
       setNewRepeatedDays([]);
       setNewPomodoros(0);
     }
