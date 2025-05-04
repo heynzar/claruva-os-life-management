@@ -136,7 +136,7 @@ export function usePomodoroTimer() {
       setTimerStatus("paused");
       if (startTime !== null) {
         const sessionTime = (Date.now() - startTime) / 1000; // in seconds
-        const totalTimeSpent = accumulatedTime + sessionTime;
+        // const totalTimeSpent = accumulatedTime + sessionTime;
 
         // Update task with the actual minutes spent when paused
         if (selectedTaskId && timerState === "pomodoro") {

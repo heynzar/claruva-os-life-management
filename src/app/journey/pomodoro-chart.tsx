@@ -25,12 +25,6 @@ type PomodoroSettings = {
   shortBreak: number;
 };
 
-type TaskWithPomodoro = {
-  id: string;
-  name: string;
-  pomodoros?: number;
-};
-
 const chartConfig = {
   focus: {
     label: "Focus",

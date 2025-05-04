@@ -16,6 +16,19 @@ import { PreferencePopover } from "./preference-popover";
 
 export type PreferenceType = "none" | "timer" | "sound";
 
+// Define interfaces for fullscreen methods
+interface FullscreenElement extends HTMLElement {
+  webkitRequestFullscreen?: () => Promise<void>;
+  msRequestFullscreen?: () => Promise<void>;
+}
+
+interface FullscreenDocument extends Document {
+  webkitExitFullscreen?: () => Promise<void>;
+  msExitFullscreen?: () => Promise<void>;
+  webkitFullscreenElement?: Element;
+  msFullscreenElement?: Element;
+}
+
 export default function FocusPage() {
   const [preferenceType, setPreferenceType] = useState<PreferenceType>("none");
   const [isFullScreen, setIsFullScreen] = useState(false);
@@ -34,12 +47,13 @@ export default function FocusPage() {
   const enterFullScreen = async () => {
     if (fullScreenRef.current) {
       try {
-        if (fullScreenRef.current.requestFullscreen) {
-          await fullScreenRef.current.requestFullscreen();
-        } else if ((fullScreenRef.current as any).webkitRequestFullscreen) {
-          await (fullScreenRef.current as any).webkitRequestFullscreen();
-        } else if ((fullScreenRef.current as any).msRequestFullscreen) {
-          await (fullScreenRef.current as any).msRequestFullscreen();
+        const element = fullScreenRef.current as FullscreenElement;
+        if (element.requestFullscreen) {
+          await element.requestFullscreen();
+        } else if (element.webkitRequestFullscreen) {
+          await element.webkitRequestFullscreen();
+        } else if (element.msRequestFullscreen) {
+          await element.msRequestFullscreen();
         }
         setIsFullScreen(true);
       } catch (err) {
@@ -51,12 +65,13 @@ export default function FocusPage() {
   // Handle exiting full screen mode
   const exitFullScreen = async () => {
     try {
-      if (document.exitFullscreen) {
-        await document.exitFullscreen();
-      } else if ((document as any).webkitExitFullscreen) {
-        await (document as any).webkitExitFullscreen();
-      } else if ((document as any).msExitFullscreen) {
-        await (document as any).msExitFullscreen();
+      const doc = document as FullscreenDocument;
+      if (doc.exitFullscreen) {
+        await doc.exitFullscreen();
+      } else if (doc.webkitExitFullscreen) {
+        await doc.webkitExitFullscreen();
+      } else if (doc.msExitFullscreen) {
+        await doc.msExitFullscreen();
       }
       setIsFullScreen(false);
     } catch (err) {
@@ -67,10 +82,11 @@ export default function FocusPage() {
   // Listen for fullscreen change events
   useEffect(() => {
     const handleFullscreenChange = () => {
+      const doc = document as FullscreenDocument;
       const isCurrentlyFullscreen = !!(
-        document.fullscreenElement ||
-        (document as any).webkitFullscreenElement ||
-        (document as any).msFullscreenElement
+        doc.fullscreenElement ||
+        doc.webkitFullscreenElement ||
+        doc.msFullscreenElement
       );
       setIsFullScreen(isCurrentlyFullscreen);
     };
