@@ -5,15 +5,15 @@ import { format } from "date-fns";
 import { DragDropContext, type DropResult } from "@hello-pangea/dnd";
 import { AudioLines, Settings2, Timer } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 
 import DayContainer from "@/components/day-container";
 import TaskCard from "@/components/task-card";
 import KeyboardShortcuts from "@/components/keyboard-shortcuts";
 import { useTaskStore } from "@/stores/useTaskStore";
 import { PomodoroTimer } from "./pomodoro";
-import { Separator } from "@/components/ui/separator";
 
-type PreferenceType = "none" | "timer" | "sound";
+export type PreferenceType = "none" | "timer" | "sound";
 
 export default function FocusPage() {
   const [preferenceType, setPreferenceType] = useState<PreferenceType>("none");
@@ -21,10 +21,9 @@ export default function FocusPage() {
 
   const { getTasksForDate, getTaskPositionForDate, reorderTasks } =
     useTaskStore();
-
   const todayTasks = getTasksForDate(today);
 
-  const togglePreference = (type: "timer" | "sound") => {
+  const togglePreference = (type: PreferenceType) => {
     setPreferenceType((prev) => (prev === type ? "none" : type));
   };
 

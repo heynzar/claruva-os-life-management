@@ -1,20 +1,9 @@
 "use client";
 
-import { useEffect, useState, useRef, Dispatch, SetStateAction } from "react";
-import { Button } from "@/components/ui/button";
-import { TimerPreferences } from "./timer-preferences";
-import { SoundPreferences } from "./sound-preferences";
-import { quranList, reciterList } from "@/data/quran";
-import sounds from "@/data/sounds";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { useTaskStore } from "@/stores/useTaskStore";
+import type { Dispatch, SetStateAction } from "react";
 import { format } from "date-fns";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -23,523 +12,53 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
-type PreferenceType = "none" | "timer" | "sound";
-type TimerState = "pomodoro" | "shortBreak" | "longBreak";
-type TimerStatus = "running" | "paused" | "idle" | "completed";
+import { TimerPreferences } from "./timer-preferences";
+import { SoundPreferences } from "./sound-preferences";
+import { useTaskStore } from "@/stores/useTaskStore";
+import { usePomodoroStore } from "@/stores/usePomodoroStore";
+import { usePomodoroTimer } from "@/hooks/use-pomodoro-timer";
+import type { PreferenceType } from "./page";
 
-interface TimerSettings {
-  pomodoro: number;
-  shortBreak: number;
-  longBreak: number;
-  soundEnabled: boolean;
-  volume: number;
-  activeSounds: string[];
-  playDuringBreaks: boolean;
-  quranReciter: string | null;
-  quranSurah: string | null;
-  quranVolume: number;
-  playNextSurah: boolean; // Add this new setting
+interface PomodoroTimerProps {
+  preferenceType: PreferenceType;
+  setPreferenceType: Dispatch<SetStateAction<PreferenceType>>;
 }
 
 export function PomodoroTimer({
-  setPreferenceType,
   preferenceType,
-}: {
-  preferenceType: PreferenceType;
-  setPreferenceType: Dispatch<SetStateAction<PreferenceType>>;
-}) {
-  const [timerState, setTimerState] = useState<TimerState>("pomodoro");
-  const [timerStatus, setTimerStatus] = useState<TimerStatus>("idle");
-  const [timeLeft, setTimeLeft] = useState(0);
-  const [pomodoroCount, setPomodoroCount] = useState(0);
-  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
-  const [startTime, setStartTime] = useState<number | null>(null);
-  const [accumulatedTime, setAccumulatedTime] = useState<number>(0);
-  const [showSkipDialog, setShowSkipDialog] = useState(false);
-  const [settings, setSettings] = useState<TimerSettings>({
-    pomodoro: 25,
-    shortBreak: 5,
-    longBreak: 15,
-    soundEnabled: true,
-    volume: 40,
-    activeSounds: ["Birds", "Waterfall"],
-    playDuringBreaks: false,
-    quranReciter: "https://server6.mp3quran.net/qtm",
-    quranSurah: "002",
-    quranVolume: 80,
-    playNextSurah: false, // Add this new setting with default value
-  });
+  setPreferenceType,
+}: PomodoroTimerProps) {
+  const { selectedTaskId, setSelectedTaskId, showSkipDialog, settings } =
+    usePomodoroStore();
 
-  // Add these refs at the top of the PomodoroTimer component, after the state declarations
-  const audioRefs = useRef<{ [key: string]: HTMLAudioElement | null }>({});
-  const quranAudioRef = useRef<HTMLAudioElement | null>(null);
-
-  // Store the original total time for progress calculation
-  const totalTimeRef = useRef(0);
-
-  // Load settings from localStorage on initial render
-  useEffect(() => {
-    const savedSettings = localStorage.getItem("pomodoroSettings");
-    if (savedSettings) {
-      setSettings(JSON.parse(savedSettings));
-    }
-
-    const savedCount = localStorage.getItem("pomodoroCount");
-    if (savedCount) {
-      setPomodoroCount(Number.parseInt(savedCount));
-    }
-  }, []);
-
-  // Initialize timer when timer state changes
-  useEffect(() => {
-    // Only initialize timer if it's not already running or paused
-    if (timerStatus !== "running" && timerStatus !== "paused") {
-      let initialTime = 0;
-      switch (timerState) {
-        case "pomodoro":
-          initialTime = settings.pomodoro * 60;
-          break;
-        case "shortBreak":
-          initialTime = settings.shortBreak * 60;
-          break;
-        case "longBreak":
-          initialTime = settings.longBreak * 60;
-          break;
-      }
-      setTimeLeft(initialTime);
-      totalTimeRef.current = initialTime; // Store the initial total time
-      setTimerStatus("idle");
-    }
-  }, [timerState]);
-
-  // This effect only runs when settings change
-  // We don't want to reset the timer if it's already running or paused
-  useEffect(() => {
-    // No action needed, just prevent timer reset
-  }, [settings]);
-
-  useEffect(() => {
-    let interval: NodeJS.Timeout | null = null;
-
-    if (timerStatus === "running" && timeLeft > 0) {
-      interval = setInterval(() => {
-        setTimeLeft((prevTime) => {
-          if (prevTime <= 1) {
-            playNotificationSound();
-            clearInterval(interval!);
-
-            // When timer completes, calculate final time
-            if (
-              startTime !== null &&
-              selectedTaskId &&
-              timerState === "pomodoro"
-            ) {
-              const sessionTime = (Date.now() - startTime) / 1000; // in seconds
-              const totalTimeSpent = (accumulatedTime + sessionTime) / 60; // convert to minutes
-              updatePomodoro(selectedTaskId, Math.round(totalTimeSpent));
-            }
-
-            setTimerStatus("completed");
-            return 0;
-          }
-          return prevTime - 1;
-        });
-      }, 1000);
-    } else if (timerStatus !== "running" && interval) {
-      clearInterval(interval);
-    }
-
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [timerStatus, timeLeft]);
-
-  // Save pomodoro count to localStorage when it changes
-  useEffect(() => {
-    localStorage.setItem("pomodoroCount", pomodoroCount.toString());
-  }, [pomodoroCount]);
-
-  // Add this effect to initialize audio elements
-  useEffect(() => {
-    // Create audio elements for each sound
-    sounds.forEach((sound) => {
-      if (!audioRefs.current[sound.name]) {
-        const audio = new Audio(sound.src);
-        audio.loop = true;
-        audioRefs.current[sound.name] = audio;
-      }
-    });
-
-    // Cleanup function to stop and remove all audio elements
-    return () => {
-      Object.values(audioRefs.current).forEach((audio) => {
-        if (audio) {
-          audio.pause();
-          audio.currentTime = 0;
-        }
-      });
-
-      if (quranAudioRef.current) {
-        quranAudioRef.current.pause();
-        quranAudioRef.current.currentTime = 0;
-      }
-    };
-  }, []);
-
-  // Add this effect to manage natural sound playback
-  useEffect(() => {
-    // Update volume for all audio elements
-    Object.entries(audioRefs.current).forEach(([name, audio]) => {
-      if (audio) {
-        audio.volume = settings.volume / 100;
-
-        // Play or pause based on whether the sound is active and timer state
-        if (settings.activeSounds.includes(name) && shouldPlayAmbientSounds()) {
-          if (audio.paused) {
-            audio
-              .play()
-              .catch((e) => console.error(`Error playing ${name}:`, e));
-          }
-        } else {
-          audio.pause();
-        }
-      }
-    });
-  }, [
-    settings.activeSounds,
-    settings.volume,
-    timerStatus,
+  const {
     timerState,
-    settings.soundEnabled,
-    settings.playDuringBreaks,
-  ]);
-
-  // Add this effect to manage Quran audio playback
-  useEffect(() => {
-    // If both reciter and surah are selected
-    if (settings.quranReciter && settings.quranSurah && shouldPlayQuran()) {
-      const reciter = reciterList.find(
-        (r) => r.query === settings.quranReciter
-      );
-      const surah = quranList.find((s) => s.query === settings.quranSurah);
-
-      if (reciter && surah) {
-        const audioUrl = `${reciter.query}/${surah.query}.mp3`;
-
-        // Create a new audio element if needed
-        if (!quranAudioRef.current) {
-          quranAudioRef.current = new Audio(audioUrl);
-          quranAudioRef.current.loop = !settings.playNextSurah; // Only loop if not playing next surah
-          quranAudioRef.current.addEventListener("ended", handleQuranEnded);
-        } else {
-          // Remove previous event listener before adding a new one
-          quranAudioRef.current.removeEventListener("ended", handleQuranEnded);
-
-          // Update loop setting based on playNextSurah
-          quranAudioRef.current.loop = !settings.playNextSurah;
-
-          // Add the event listener again
-          quranAudioRef.current.addEventListener("ended", handleQuranEnded);
-
-          // If the URL has changed, update it
-          if (quranAudioRef.current.src !== audioUrl) {
-            quranAudioRef.current.pause();
-            quranAudioRef.current.src = audioUrl;
-            quranAudioRef.current.load();
-          }
-        }
-
-        // Set volume and play
-        if (quranAudioRef.current) {
-          quranAudioRef.current.volume = settings.quranVolume / 100;
-          quranAudioRef.current
-            .play()
-            .catch((e) => console.error("Error playing Quran:", e));
-        }
-      }
-    } else if (quranAudioRef.current) {
-      // Pause if conditions are not met
-      quranAudioRef.current.pause();
-    }
-
-    // Cleanup function
-    return () => {
-      if (quranAudioRef.current) {
-        quranAudioRef.current.removeEventListener("ended", handleQuranEnded);
-      }
-    };
-  }, [
-    settings.quranReciter,
-    settings.quranSurah,
-    settings.quranVolume,
-    settings.playNextSurah,
     timerStatus,
-    timerState,
-    settings.soundEnabled,
-    settings.playDuringBreaks,
-  ]);
-
-  // Add this function to handle when a surah finishes playing
-  const handleQuranEnded = () => {
-    if (
-      settings.playNextSurah &&
-      settings.quranReciter &&
-      settings.quranSurah &&
-      shouldPlayQuran()
-    ) {
-      // Find the current surah index
-      const currentSurahIndex = quranList.findIndex(
-        (s) => s.query === settings.quranSurah
-      );
-
-      if (currentSurahIndex !== -1) {
-        // Get the next surah (or loop back to the first one)
-        const nextSurahIndex = (currentSurahIndex + 1) % quranList.length;
-        const nextSurah = quranList[nextSurahIndex].query;
-
-        // Play the next surah directly
-        if (quranAudioRef.current) {
-          const reciter = reciterList.find(
-            (r) => r.query === settings.quranReciter
-          );
-          if (reciter) {
-            const audioUrl = `${reciter.query}/${nextSurah}.mp3`;
-            quranAudioRef.current.src = audioUrl;
-            quranAudioRef.current.load();
-            quranAudioRef.current
-              .play()
-              .catch((e) =>
-                console.error("Error playing next Quran surah:", e)
-              );
-
-            // Update the settings after starting playback
-            updateSettings({ quranSurah: nextSurah });
-          }
-        }
-      }
-    } else if (quranAudioRef.current && !settings.playNextSurah) {
-      // If not playing next surah, just replay the current one
-      quranAudioRef.current.currentTime = 0;
-      quranAudioRef.current
-        .play()
-        .catch((e) => console.error("Error replaying Quran:", e));
-    }
-  };
-
-  const toggleTimer = () => {
-    if (timerStatus === "running") {
-      // When pausing, calculate and store the time spent in this session
-      setTimerStatus("paused");
-      if (startTime !== null) {
-        const sessionTime = (Date.now() - startTime) / 1000; // in seconds
-        setAccumulatedTime((prev) => prev + sessionTime);
-
-        // Update task with the actual minutes spent when paused
-        if (selectedTaskId && timerState === "pomodoro") {
-          const minutesSpent = sessionTime / 60;
-          updatePomodoro(selectedTaskId, Math.round(minutesSpent));
-        }
-      }
-    } else if (timerStatus === "completed") {
-      moveToNextState();
-    } else {
-      if (timerStatus === "idle") {
-        totalTimeRef.current = timeLeft; // Store the starting time
-        // Reset accumulated time when starting a new timer
-        setAccumulatedTime(0);
-      }
-      // Record the start time when the timer starts/resumes
-      setStartTime(Date.now());
-      setTimerStatus("running");
-    }
-  };
-
-  const handleSkip = () => {
-    // Only show dialog if we're in a pomodoro session and have a selected task
-    if (timerState === "pomodoro" && selectedTaskId) {
-      setShowSkipDialog(true);
-    } else {
-      // For breaks, just move to next state without asking
-      moveToNextState();
-    }
-  };
-
-  const skipWithoutTime = () => {
-    setShowSkipDialog(false);
-    moveToNextState();
-  };
-
-  const skipWithFullPomodoroTime = () => {
-    if (selectedTaskId && timerState === "pomodoro") {
-      // Add the full pomodoro time (in minutes)
-      updatePomodoro(selectedTaskId, Math.round(timeLeft / 60));
-    }
-
-    setShowSkipDialog(false);
-    moveToNextState();
-  };
-
-  const moveToNextState = () => {
-    if (timerState === "pomodoro") {
-      // Increment pomodoro count
-      const newCount = pomodoroCount + 1;
-      setPomodoroCount(newCount);
-
-      // Don't update task here - we already did it in the timer completion handler
-
-      // After 4 pomodoros, take a long break
-      if (newCount % 4 === 0) {
-        setTimerState("longBreak");
-      } else {
-        setTimerState("shortBreak");
-      }
-    } else {
-      // After any break, go back to pomodoro
-      setTimerState("pomodoro");
-    }
-
-    // Reset accumulated time when moving to a new state
-    setAccumulatedTime(0);
-    setStartTime(null);
-
-    // Reset timer status to idle so it doesn't auto-start
-    setTimerStatus("idle");
-  };
-
-  const playNotificationSound = () => {
-    if (settings.soundEnabled) {
-      const audio = new Audio("/notification.mp3");
-      audio.volume = settings.volume / 100;
-      audio.play().catch((e) => console.error("Error playing sound:", e));
-    }
-  };
-
-  const updateSettings = (newSettings: Partial<TimerSettings>) => {
-    const updatedSettings = { ...settings, ...newSettings };
-    setSettings(updatedSettings);
-    localStorage.setItem("pomodoroSettings", JSON.stringify(updatedSettings));
-  };
-
-  // Format time as MM:SS
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, "0")}:${secs
-      .toString()
-      .padStart(2, "0")}`;
-  };
-
-  // Calculate progress for the circular indicator
-  const calculateProgress = () => {
-    if (totalTimeRef.current === 0) return 0;
-    return (timeLeft / totalTimeRef.current) * 100;
-  };
-
-  const getStateLabel = () => {
-    switch (timerState) {
-      case "pomodoro":
-        return "Focus";
-      case "shortBreak":
-        return "Short Break";
-      case "longBreak":
-        return "Long Break";
-    }
-  };
-
-  const getButtonLabel = () => {
-    if (timerStatus === "completed") {
-      if (timerState === "pomodoro") {
-        return "Start Break";
-      } else {
-        return "Start Focus";
-      }
-    }
-
-    if (timerStatus === "idle") {
-      return "Start";
-    }
-
-    return timerStatus === "running" ? "Pause" : "Continue";
-  };
-
-  // Determine if ambient sounds should be playing
-  const shouldPlayAmbientSounds = () => {
-    if (!settings.soundEnabled || settings.activeSounds.length === 0) {
-      return false;
-    }
-
-    if (timerStatus !== "running") {
-      return false;
-    }
-
-    // Play during Pomodoro sessions
-    if (timerState === "pomodoro") {
-      return true;
-    }
-
-    // Play during breaks only if the setting is enabled
-    if (
-      (timerState === "shortBreak" || timerState === "longBreak") &&
-      settings.playDuringBreaks
-    ) {
-      return true;
-    }
-
-    return false;
-  };
-
-  // Determine if Quran should be playing
-  const shouldPlayQuran = () => {
-    if (
-      !settings.soundEnabled ||
-      !settings.quranReciter ||
-      !settings.quranSurah
-    ) {
-      return false;
-    }
-
-    if (timerStatus !== "running") {
-      return false;
-    }
-
-    // Play during Pomodoro sessions
-    if (timerState === "pomodoro") {
-      return true;
-    }
-
-    // Play during breaks only if the setting is enabled
-    if (
-      (timerState === "shortBreak" || timerState === "longBreak") &&
-      settings.playDuringBreaks
-    ) {
-      return true;
-    }
-
-    return false;
-  };
+    pomodoroCount,
+    progress,
+    formattedTime,
+    stateLabel,
+    buttonLabel,
+    toggleTimer,
+    handleSkip,
+    skipWithoutTime,
+    skipWithFullPomodoroTime,
+    formatMinutes,
+  } = usePomodoroTimer();
 
   const today = format(new Date(), "yyyy-MM-dd");
-  const { tasks, getTasksForDate, updateTask } = useTaskStore();
+  const { getTasksForDate } = useTaskStore();
   const todayTasks = getTasksForDate(today);
 
-  const progress = calculateProgress();
   const circumference = 2 * Math.PI * 120;
-
-  console.log(selectedTaskId);
-
-  const updatePomodoro = (taskId: string, pomodorosToAdd: number) => {
-    if (!taskId || pomodorosToAdd <= 0) return;
-
-    const task = tasks.find((t) => t.id === taskId);
-    if (!task) return;
-
-    const currentPomodoros = task.pomodoros ?? 0;
-
-    updateTask(taskId, {
-      pomodoros: currentPomodoros + pomodorosToAdd,
-    });
-  };
 
   return (
     <div className="flex flex-col-reverse sm:flex-row w-full h-full sm:overflow-clip justify-center items-center">
@@ -562,7 +81,12 @@ export function PomodoroTimer({
 
                 return (
                   <SelectItem key={task.id} value={task.id}>
-                    {truncatedName} - {task.pomodoros}
+                    <div className="flex items-center justify-between w-[274px]">
+                      {truncatedName}
+                      <Badge variant="outline">
+                        {formatMinutes(task.pomodoros)} 🍅
+                      </Badge>
+                    </div>
                   </SelectItem>
                 );
               })}
@@ -598,19 +122,19 @@ export function PomodoroTimer({
 
           <div className="absolute inset-0 flex flex-col items-center justify-center">
             <span className="text-muted-foreground">
-              {getStateLabel()}{" "}
+              {stateLabel}{" "}
               {timerState === "pomodoro" && `(${(pomodoroCount % 4) + 1}/4)`}
             </span>
             <span className="text-6xl p-2 mb-4 rounded-2xl hover:bg-card font-semibold">
-              {formatTime(timeLeft)}
+              {formattedTime}
             </span>
           </div>
         </div>
 
-        {/* Rest of the timer UI */}
+        {/* Timer controls */}
         <div className="flex gap-2">
           <Button className="px-8" size="sm" onClick={toggleTimer}>
-            {getButtonLabel()}
+            {buttonLabel}
           </Button>
 
           {timerStatus === "paused" && (
@@ -621,7 +145,7 @@ export function PomodoroTimer({
         </div>
 
         {/* Skip dialog */}
-        <Dialog open={showSkipDialog} onOpenChange={setShowSkipDialog}>
+        <Dialog open={showSkipDialog} onOpenChange={() => {}}>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Skip Pomodoro Session</DialogTitle>
@@ -651,7 +175,6 @@ export function PomodoroTimer({
         {preferenceType === "timer" && (
           <TimerPreferences
             settings={settings}
-            updateSettings={updateSettings}
             setPreferenceType={setPreferenceType}
           />
         )}
@@ -659,11 +182,6 @@ export function PomodoroTimer({
         {preferenceType === "sound" && (
           <SoundPreferences
             settings={settings}
-            updateSettings={updateSettings}
-            shouldPlaySounds={shouldPlayAmbientSounds()}
-            shouldPlayQuran={shouldPlayQuran()}
-            timerState={timerState}
-            timerStatus={timerStatus}
             setPreferenceType={setPreferenceType}
           />
         )}
