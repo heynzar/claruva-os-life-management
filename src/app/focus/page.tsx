@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { format } from "date-fns";
 import { DragDropContext, type DropResult } from "@hello-pangea/dnd";
-import { AudioLines, Settings2, Timer } from "lucide-react";
+import { AudioLines, Timer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 
@@ -12,11 +12,14 @@ import TaskCard from "@/components/task-card";
 import KeyboardShortcuts from "@/components/keyboard-shortcuts";
 import { useTaskStore } from "@/stores/useTaskStore";
 import { PomodoroTimer } from "./pomodoro";
+import { PreferencePopover } from "./preference-popover";
 
 export type PreferenceType = "none" | "timer" | "sound";
 
 export default function FocusPage() {
   const [preferenceType, setPreferenceType] = useState<PreferenceType>("none");
+  const [isFullScreen, setIsFullScreen] = useState(false);
+  const fullScreenRef = useRef<HTMLDivElement>(null);
   const today = format(new Date(), "yyyy-MM-dd");
 
   const { getTasksForDate, getTaskPositionForDate, reorderTasks } =
@@ -26,6 +29,68 @@ export default function FocusPage() {
   const togglePreference = (type: PreferenceType) => {
     setPreferenceType((prev) => (prev === type ? "none" : type));
   };
+
+  // Handle entering full screen mode
+  const enterFullScreen = async () => {
+    if (fullScreenRef.current) {
+      try {
+        if (fullScreenRef.current.requestFullscreen) {
+          await fullScreenRef.current.requestFullscreen();
+        } else if ((fullScreenRef.current as any).webkitRequestFullscreen) {
+          await (fullScreenRef.current as any).webkitRequestFullscreen();
+        } else if ((fullScreenRef.current as any).msRequestFullscreen) {
+          await (fullScreenRef.current as any).msRequestFullscreen();
+        }
+        setIsFullScreen(true);
+      } catch (err) {
+        console.error("Error attempting to enable fullscreen:", err);
+      }
+    }
+  };
+
+  // Handle exiting full screen mode
+  const exitFullScreen = async () => {
+    try {
+      if (document.exitFullscreen) {
+        await document.exitFullscreen();
+      } else if ((document as any).webkitExitFullscreen) {
+        await (document as any).webkitExitFullscreen();
+      } else if ((document as any).msExitFullscreen) {
+        await (document as any).msExitFullscreen();
+      }
+      setIsFullScreen(false);
+    } catch (err) {
+      console.error("Error attempting to exit fullscreen:", err);
+    }
+  };
+
+  // Listen for fullscreen change events
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      const isCurrentlyFullscreen = !!(
+        document.fullscreenElement ||
+        (document as any).webkitFullscreenElement ||
+        (document as any).msFullscreenElement
+      );
+      setIsFullScreen(isCurrentlyFullscreen);
+    };
+
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
+    document.addEventListener("msfullscreenchange", handleFullscreenChange);
+
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+      document.removeEventListener(
+        "webkitfullscreenchange",
+        handleFullscreenChange
+      );
+      document.removeEventListener(
+        "msfullscreenchange",
+        handleFullscreenChange
+      );
+    };
+  }, []);
 
   // Handle drag end for task reordering
   const handleDragEnd = (result: DropResult) => {
@@ -85,9 +150,7 @@ export default function FocusPage() {
               <Timer className="size-4" />
             </Button>
             <Separator orientation="vertical" className="mx-2" />
-            <Button disabled size="icon" variant="ghost" aria-label="Settings">
-              <Settings2 className="size-4" />
-            </Button>
+            <PreferencePopover />
           </div>
         </header>
 
@@ -130,10 +193,13 @@ export default function FocusPage() {
           </div>
 
           {/* Pomodoro timer container */}
-          <div className="h-full bg-muted/40">
+          <div className="h-full bg-muted/40" ref={fullScreenRef}>
             <PomodoroTimer
               preferenceType={preferenceType}
               setPreferenceType={setPreferenceType}
+              isFullScreen={isFullScreen}
+              enterFullScreen={enterFullScreen}
+              exitFullScreen={exitFullScreen}
             />
           </div>
         </main>

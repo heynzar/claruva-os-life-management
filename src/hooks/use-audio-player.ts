@@ -5,12 +5,20 @@ import { usePomodoroStore } from "@/stores/usePomodoroStore";
 import { quranList, reciterList } from "@/data/quran";
 import sounds from "@/data/sounds";
 
+// Create singleton audio instances to persist across component remounts
+const audioInstances: { [key: string]: HTMLAudioElement } = {};
+let quranAudioInstance: HTMLAudioElement | null = null;
+let quranCurrentTime = 0;
+let quranIsPlaying = false;
+
 export function useAudioPlayer() {
   const { settings, timerState, timerStatus, updateSettings } =
     usePomodoroStore();
 
-  const audioRefs = useRef<{ [key: string]: HTMLAudioElement | null }>({});
-  const quranAudioRef = useRef<HTMLAudioElement | null>(null);
+  const audioRefs = useRef<{ [key: string]: HTMLAudioElement | null }>(
+    audioInstances
+  );
+  const quranAudioRef = useRef<HTMLAudioElement | null>(quranAudioInstance);
 
   // Initialize audio elements
   useEffect(() => {
@@ -20,21 +28,16 @@ export function useAudioPlayer() {
         const audio = new Audio(sound.src);
         audio.loop = true;
         audioRefs.current[sound.name] = audio;
+        audioInstances[sound.name] = audio;
       }
     });
 
     // Cleanup function to stop and remove all audio elements
     return () => {
-      Object.values(audioRefs.current).forEach((audio) => {
-        if (audio) {
-          audio.pause();
-          audio.currentTime = 0;
-        }
-      });
-
+      // Save Quran audio state before unmounting
       if (quranAudioRef.current) {
-        quranAudioRef.current.pause();
-        quranAudioRef.current.currentTime = 0;
+        quranCurrentTime = quranAudioRef.current.currentTime;
+        quranIsPlaying = !quranAudioRef.current.paused;
       }
     };
   }, []);
@@ -84,6 +87,12 @@ export function useAudioPlayer() {
           quranAudioRef.current = new Audio(audioUrl);
           quranAudioRef.current.loop = !settings.playNextSurah;
           quranAudioRef.current.addEventListener("ended", handleQuranEnded);
+          quranAudioInstance = quranAudioRef.current;
+
+          // Restore playback position if we have one
+          if (quranCurrentTime > 0) {
+            quranAudioRef.current.currentTime = quranCurrentTime;
+          }
         } else {
           // Remove previous event listener before adding a new one
           quranAudioRef.current.removeEventListener("ended", handleQuranEnded);
@@ -96,18 +105,34 @@ export function useAudioPlayer() {
 
           // If the URL has changed, update it
           if (quranAudioRef.current.src !== audioUrl) {
+            const wasPlaying = !quranAudioRef.current.paused;
             quranAudioRef.current.pause();
             quranAudioRef.current.src = audioUrl;
             quranAudioRef.current.load();
+
+            // If it was playing before, resume playback
+            if (wasPlaying) {
+              quranAudioRef.current
+                .play()
+                .catch((e) => console.error("Error playing Quran:", e));
+            }
           }
         }
 
         // Set volume and play
         if (quranAudioRef.current) {
           quranAudioRef.current.volume = settings.quranVolume / 100;
-          quranAudioRef.current
-            .play()
-            .catch((e) => console.error("Error playing Quran:", e));
+
+          // Only start playing if it's not already playing or if we're resuming from a saved state
+          if (
+            quranAudioRef.current.paused &&
+            (quranIsPlaying || timerStatus === "running")
+          ) {
+            quranAudioRef.current
+              .play()
+              .catch((e) => console.error("Error playing Quran:", e));
+            quranIsPlaying = false; // Reset the flag after attempting to play
+          }
         }
       }
     } else if (quranAudioRef.current) {
@@ -235,9 +260,16 @@ export function useAudioPlayer() {
     return false;
   };
 
-  // Play notification sound
+  // Play notification sound - always play regardless of sound enabled setting
   const playNotificationSound = () => {
-    if (settings.soundEnabled) {
+    // Always play notification sound when timer completes, but respect the settings
+    // for different timer states
+    const shouldPlay =
+      (timerState === "pomodoro" && !settings.soundEnabled) ||
+      ((timerState === "shortBreak" || timerState === "longBreak") &&
+        !settings.playDuringBreaks);
+
+    if (shouldPlay) {
       const audio = new Audio("/check.wav");
       audio.volume = settings.volume / 100;
       audio.play().catch((e) => console.error("Error playing sound:", e));

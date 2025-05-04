@@ -19,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Maximize2, Minimize2 } from "lucide-react";
 
 import { TimerPreferences } from "./timer-preferences";
 import { SoundPreferences } from "./sound-preferences";
@@ -30,11 +31,17 @@ import type { PreferenceType } from "./page";
 interface PomodoroTimerProps {
   preferenceType: PreferenceType;
   setPreferenceType: Dispatch<SetStateAction<PreferenceType>>;
+  isFullScreen: boolean;
+  enterFullScreen?: () => void;
+  exitFullScreen?: () => void;
 }
 
 export function PomodoroTimer({
   preferenceType,
   setPreferenceType,
+  isFullScreen,
+  enterFullScreen,
+  exitFullScreen,
 }: PomodoroTimerProps) {
   const { selectedTaskId, setSelectedTaskId, showSkipDialog, settings } =
     usePomodoroStore();
@@ -63,36 +70,38 @@ export function PomodoroTimer({
   return (
     <div className="flex flex-col-reverse sm:flex-row w-full h-full sm:overflow-clip justify-center items-center">
       <div className="flex flex-1 flex-col h-full items-center justify-center p-8 transition-all duration-300">
-        <div className="mb-4">
-          <Select
-            value={selectedTaskId || ""}
-            onValueChange={setSelectedTaskId}
-            disabled={timerStatus === "running" || timerState !== "pomodoro"}
-          >
-            <SelectTrigger className="max-w-xs hover:!bg-secondary text-muted-foreground !bg-transparent border-none !h-8 cursor-pointer shadow-none">
-              <SelectValue placeholder="Select a task to focus on" />
-            </SelectTrigger>
-            <SelectContent align="center" className="w-xs max-h-[300px]">
-              {todayTasks.map((task) => {
-                const truncatedName =
-                  task.name.length > 40
-                    ? `${task.name.slice(0, 40)}...`
-                    : task.name;
+        {!isFullScreen && (
+          <div className="mb-4">
+            <Select
+              value={selectedTaskId || ""}
+              onValueChange={setSelectedTaskId}
+              disabled={timerStatus === "running" || timerState !== "pomodoro"}
+            >
+              <SelectTrigger className="max-w-xs hover:!bg-secondary text-muted-foreground !bg-transparent border-none !h-8 cursor-pointer shadow-none">
+                <SelectValue placeholder="Select a task to focus on" />
+              </SelectTrigger>
+              <SelectContent align="center" className="w-xs max-h-[300px]">
+                {todayTasks.map((task) => {
+                  const truncatedName =
+                    task.name.length > 40
+                      ? `${task.name.slice(0, 40)}...`
+                      : task.name;
 
-                return (
-                  <SelectItem key={task.id} value={task.id}>
-                    <div className="flex items-center justify-between w-[274px]">
-                      {truncatedName}
-                      <Badge variant="outline">
-                        {formatMinutes(task.pomodoros)} 🍅
-                      </Badge>
-                    </div>
-                  </SelectItem>
-                );
-              })}
-            </SelectContent>
-          </Select>
-        </div>
+                  return (
+                    <SelectItem key={task.id} value={task.id}>
+                      <div className="flex items-center justify-between w-[274px]">
+                        {truncatedName}
+                        <Badge variant="outline">
+                          {formatMinutes(task.pomodoros)} 🍅
+                        </Badge>
+                      </div>
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
 
         <div className="relative mb-8 scale-105">
           <svg width="280" height="280" viewBox="0 0 280 280">
@@ -142,6 +151,17 @@ export function PomodoroTimer({
               Skip
             </Button>
           )}
+
+          {/* Full screen toggle button */}
+          {isFullScreen ? (
+            <Button variant="outline" size="icon" onClick={exitFullScreen}>
+              <Minimize2 className="size-4" />
+            </Button>
+          ) : (
+            <Button variant="outline" size="icon" onClick={enterFullScreen}>
+              <Maximize2 className="size-4" />
+            </Button>
+          )}
         </div>
 
         {/* Skip dialog */}
@@ -167,25 +187,27 @@ export function PomodoroTimer({
         </Dialog>
       </div>
 
-      <div
-        className={`${
-          preferenceType !== "none" && "w-full sm:max-w-[350px]"
-        } h-full `}
-      >
-        {preferenceType === "timer" && (
-          <TimerPreferences
-            settings={settings}
-            setPreferenceType={setPreferenceType}
-          />
-        )}
+      {!isFullScreen && (
+        <div
+          className={`${
+            preferenceType !== "none" && "w-full sm:max-w-[350px]"
+          } h-full `}
+        >
+          {preferenceType === "timer" && (
+            <TimerPreferences
+              settings={settings}
+              setPreferenceType={setPreferenceType}
+            />
+          )}
 
-        {preferenceType === "sound" && (
-          <SoundPreferences
-            settings={settings}
-            setPreferenceType={setPreferenceType}
-          />
-        )}
-      </div>
+          {preferenceType === "sound" && (
+            <SoundPreferences
+              settings={settings}
+              setPreferenceType={setPreferenceType}
+            />
+          )}
+        </div>
+      )}
     </div>
   );
 }

@@ -17,6 +17,7 @@ export function usePomodoroTimer() {
     showSkipDialog,
     settings,
     setTimerStatus,
+    setTimeLeft,
     setShowSkipDialog,
     moveToNextState,
     decrementTimeLeft,
@@ -27,6 +28,32 @@ export function usePomodoroTimer() {
 
   // Store the original total time for progress calculation
   const totalTimeRef = useRef(0);
+
+  // Initialize timer with correct duration from settings when in idle state
+  useEffect(() => {
+    if (timerStatus === "idle") {
+      let initialTime = 0;
+      switch (timerState) {
+        case "pomodoro":
+          initialTime = settings.pomodoro * 60;
+          break;
+        case "shortBreak":
+          initialTime = settings.shortBreak * 60;
+          break;
+        case "longBreak":
+          initialTime = settings.longBreak * 60;
+          break;
+      }
+      setTimeLeft(initialTime);
+      totalTimeRef.current = initialTime;
+    }
+  }, [
+    timerState,
+    timerStatus,
+    settings.pomodoro,
+    settings.shortBreak,
+    settings.longBreak,
+  ]);
 
   // Initialize total time ref when timer state changes
   useEffect(() => {
@@ -45,7 +72,16 @@ export function usePomodoroTimer() {
 
         // Check if timer is completed
         if (timeLeft <= 1) {
-          playNotificationSound();
+          // Play notification sound based on timer state and settings
+          const shouldPlaySound =
+            (timerState === "pomodoro" && !settings.soundEnabled) ||
+            ((timerState === "shortBreak" || timerState === "longBreak") &&
+              !settings.playDuringBreaks);
+
+          if (shouldPlaySound) {
+            playNotificationSound();
+          }
+
           clearInterval(interval!);
 
           // When timer completes, calculate final time
@@ -76,6 +112,8 @@ export function usePomodoroTimer() {
     selectedTaskId,
     timerState,
     accumulatedTime,
+    settings.soundEnabled,
+    settings.playDuringBreaks,
   ]);
 
   // Update task with pomodoro time
@@ -155,7 +193,7 @@ export function usePomodoroTimer() {
 
   // Calculate progress for the circular indicator
   const calculateProgress = () => {
-    if (totalTimeRef.current === 0) return 0;
+    if (totalTimeRef.current === 0) return 100; // Return 100 instead of 0
     return (timeLeft / totalTimeRef.current) * 100;
   };
 

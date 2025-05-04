@@ -168,41 +168,36 @@ export const usePomodoroStore = create<PomodoroStore>()(
       },
 
       moveToNextState: () => {
-        const { timerState, pomodoroCount } = get();
+        const { timerState, pomodoroCount, settings } = get();
 
         let newCount = pomodoroCount;
+        let nextState = timerState;
+
         if (timerState === "pomodoro") {
           // Increment pomodoro count
           newCount = pomodoroCount + 1;
-          set({ pomodoroCount: newCount });
 
           // After 4 pomodoros, take a long break
           if (newCount % 4 === 0) {
-            set({ timerState: "longBreak" });
+            nextState = "longBreak";
           } else {
-            set({ timerState: "shortBreak" });
+            nextState = "shortBreak";
           }
         } else {
           // After any break, go back to pomodoro
-          set({ timerState: "pomodoro" });
+          nextState = "pomodoro";
         }
 
         // Reset accumulated time and start time
         set({
+          timerState: nextState,
+          pomodoroCount: newCount,
           accumulatedTime: 0,
           startTime: null,
           timerStatus: "idle",
         });
 
         // Initialize timer based on new state
-        const { settings } = get();
-        const nextState =
-          timerState === "pomodoro"
-            ? newCount % 4 === 0
-              ? "longBreak"
-              : "shortBreak"
-            : "pomodoro";
-
         let initialTime = 0;
         switch (nextState) {
           case "pomodoro":
