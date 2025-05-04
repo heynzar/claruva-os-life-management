@@ -18,6 +18,7 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 import { Badge } from "@/components/ui/badge";
+import { Task } from "@/stores/useTaskStore";
 
 type PomodoroSettings = {
   pomodoro: number;
@@ -48,7 +49,7 @@ export function PomodoroInsightsChart({
 }: {
   totalFocusedHours: number;
   pomodoroSettings: PomodoroSettings;
-  topPomodoroTasks: TaskWithPomodoro[];
+  topPomodoroTasks: Task[];
 }) {
   const chartData = [
     {
